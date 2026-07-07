@@ -1,0 +1,5 @@
+.build/
+qmk_firmware/
+*.bin
+*.hex
+*.uf2
