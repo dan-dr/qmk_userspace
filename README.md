@@ -8,9 +8,13 @@ External QMK userspace for Dan's Sofle keymap.
 
 ## Local setup
 
+Use a QMK/BastardKB firmware checkout with External Userspace support, such as
+BastardKB `bkb-master` or upstream QMK `master`.
+
 ```nu
-qmk config user.qmk_home (realpath ../bastardkb-qmk)
-qmk config user.overlay_dir (realpath .)
+$env.QMK_HOME = (realpath ../bastardkb-qmk)
+$env.QMK_USERSPACE = (pwd)
+qmk userspace-list
 qmk compile -kb sofle/rev1 -km danr
 ```
 
