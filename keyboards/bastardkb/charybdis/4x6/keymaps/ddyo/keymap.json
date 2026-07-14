@@ -1,0 +1,6 @@
+{
+    "modules": [
+        "bastardkb/argos",
+        "srwi/keypeek_layer_notify"
+    ]
+}

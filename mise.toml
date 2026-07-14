@@ -1,0 +1,4 @@
+[env]
+_.path = "{{env.HOME}}/.local/bin"
+QMK_HOME = "{{config_root}}/../bastardkb-qmk"
+QMK_USERSPACE = "{{config_root}}"
