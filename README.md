@@ -64,6 +64,22 @@ The community modules are pinned as Git submodules:
 - `modules/srwi`: upstream `srwi/qmk-modules` at `8f120e29fe`, unchanged.
   KeyPeek therefore stays directly pinned to upstream.
 
+## KeyPeek
+
+Both keymaps load `srwi/keypeek_layer_notify`. Their generated QMK metadata
+files provide KeyPeek with physical layout, matrix dimensions, and USB identity:
+
+- `keyboards/sofle/keymaps/danr/keyboard_info.json`
+- `keyboards/bastardkb/charybdis/4x6/keymaps/ddyo/keyboard_info.json`
+
+Regenerate the Sofle metadata after changing the keyboard definition:
+
+```nu
+mise exec -- qmk info -kb sofle/rev1 -m -f json
+```
+
+KeyPeek still reads the layer count and keycodes from the connected keyboard.
+
 ## Source
 
 Extracted from Dan's old `dan-dr/master` QMK fork:

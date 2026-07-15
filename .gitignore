@@ -3,3 +3,5 @@ qmk_firmware/
 *.bin
 *.hex
 *.uf2
+
+.DS_Store
