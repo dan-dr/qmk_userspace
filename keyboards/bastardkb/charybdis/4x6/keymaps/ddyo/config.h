@@ -21,7 +21,7 @@
 #    define DYNAMIC_KEYMAP_LAYER_COUNT 4
 #endif // VIA_ENABLE
 
-/* Argos already owns via_command_kb; chain KeyPeek from the keymap instead. */
+/* Let the keymap share via_command_kb between Argos and KeyPeek. */
 #define KEYPEEK_DISABLE_RAW_HID_HANDLER
 #define ARGOS_DISABLE_VIA_COMMAND_KB
 
