@@ -13,6 +13,6 @@ MOUSEKEY_ENABLE = yes
 NKRO_ENABLE = yes            # Enable N-Key Rollover
 QMK_SETTINGS = yes
 SPACE_CADET_ENABLE = no
-CONSOLE_ENABLE = no
+CONSOLE_ENABLE = yes
 
 SRC += analog.c

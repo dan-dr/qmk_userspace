@@ -107,14 +107,14 @@ static void fsr_debug_log(int16_t reading, bool state_changed) {
 
     uint8_t filled = ((uint32_t)clipped * FSR_DEBUG_BAR_WIDTH) / range;
 
-    print("\rFSR 0|");
+    dprint("\rFSR 0|");
     for (uint8_t i = 0; i < FSR_DEBUG_BAR_WIDTH; i++) {
-        print(i < filled ? "#" : ".");
+        dprint(i < filled ? "#" : ".");
     }
 
-    printf("|range:%4d val:%4d max:%4d adc:%4d pressed:%d    ", range, reading, fsr_max_reading, FSR_DEBUG_ADC_MAX, fsr_pressed);
+    dprintf("|range:%4d val:%4d max:%4d adc:%4d pressed:%d    ", range, reading, fsr_max_reading, FSR_DEBUG_ADC_MAX, fsr_pressed);
     if (state_changed) {
-        print("\n");
+        dprint("\n");
     }
 }
 #    endif // DDYO_DEBUG
@@ -149,7 +149,7 @@ static void fsr_scan(void) {
     }
 
 #    ifdef DDYO_DEBUG
-    if (fsr_state_changed || fsr_debug_timer == 0 || timer_elapsed(fsr_debug_timer) >= FSR_DEBUG_INTERVAL_MS) {
+    if (debug_enable && (fsr_state_changed || fsr_debug_timer == 0 || timer_elapsed(fsr_debug_timer) >= FSR_DEBUG_INTERVAL_MS)) {
         fsr_debug_timer = timer_read();
         fsr_debug_log(reading, fsr_state_changed);
     }
@@ -300,7 +300,7 @@ bool shutdown_user(bool jump_to_bootloader) {
 
 #ifdef DDYO_DEBUG
 void keyboard_post_init_user(void) {
-  debug_enable = true;
+  debug_enable = false;
   debug_matrix = true;
   debug_mouse = false;
 }
@@ -314,6 +314,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 /* Both Argos and KeyPeek want via_command_kb; share one handler. */
 bool via_command_kb(uint8_t *data, uint8_t length) {
     if (keypeek_handle_command(data, length)) {
+#ifdef DDYO_DEBUG
+        dprintf("KeyPeek: subscription handled, state=0x%02X\n", length > 1 ? data[1] : 0);
+#endif
         return true;
     }
     return argos_handle_command(data, length);
