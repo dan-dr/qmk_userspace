@@ -18,7 +18,7 @@
 
 #ifdef VIA_ENABLE
 /* VIA configuration. */
-#    define DYNAMIC_KEYMAP_LAYER_COUNT 4
+#define DYNAMIC_KEYMAP_LAYER_COUNT 4
 #endif // VIA_ENABLE
 
 /* Let the keymap share via_command_kb between Argos and KeyPeek. */
@@ -45,17 +45,17 @@
  */
 #undef MATRIX_ROW_PINS
 #define MATRIX_ROW_PINS \
-    { GP15, GP12, GP5, GP4, GP9 }
+  {GP15, GP12, GP5, GP4, GP9}
 
 #undef MATRIX_COL_PINS
 #define MATRIX_COL_PINS \
-    { GP13, GP14, GP16, GP6, GP7, GP8 }
+  {GP13, GP14, GP16, GP6, GP7, GP8}
 
 #define MATRIX_ROW_PINS_RIGHT \
-    { GP13, GP16, GP5, GP4, GP9 }
+  {GP13, GP16, GP5, GP4, GP9}
 
 #define MATRIX_COL_PINS_RIGHT \
-    { GP15, GP14, GP12, GP6, GP7, GP8 }
+  {GP15, GP14, GP12, GP6, GP7, GP8}
 
 /* Use the adapter's handedness pin instead of a fixed master side. */
 #undef MASTER_RIGHT
@@ -66,22 +66,16 @@
 #undef POINTING_DEVICE_CS_PIN
 #define POINTING_DEVICE_CS_PIN GP21
 
+/* Automatically enable the pointer layer when moving the trackball. */
+// #define POINTING_DEVICE_AUTO_MOUSE_ENABLE
+#define AUTO_MOUSE_TIME 1000
+#define AUTO_MOUSE_THRESHOLD 10
+
 #undef USB_VBUS_PIN
 #define USB_VBUS_PIN GP19
 
 #undef RP2040_BOOTLOADER_DOUBLE_TAP_RESET_TIMEOUT
 #define RP2040_BOOTLOADER_DOUBLE_TAP_RESET_TIMEOUT 1000U
-
-#ifdef POINTING_DEVICE_ENABLE
-// Automatically enable the pointer layer when moving the trackball.  See also:
-// - `CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_TIMEOUT_MS`
-// - `CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_THRESHOLD`
-// #define CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_ENABLE
-// #    define CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_TIMEOUT_MS 1500
-// #    define CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_THRESHOLD 1
-
-#endif // POINTING_DEVICE_ENABLE
-
 
 // #define EE_HANDS // not working well, also not recommended to connect the non trackball half
 
@@ -91,19 +85,19 @@
 #undef ROTATIONAL_TRANSFORM_ANGLE
 #define ROTATIONAL_TRANSFORM_ANGLE -85
 
-#define FSR_ENABLE 1
+// #define FSR_ENABLE
 #define FSR_PIN GP26
 #define FSR_THRESHOLD 150
 #define FSR_RELEASE_THRESHOLD 80
 #define FSR_SCAN_INTERVAL_MS 20
 #define FSR_DEBUG_INTERVAL_MS 100
+#define FSR_DEBUG_ADC_MAX 4095
+#define FSR_DEBUG_BAR_MIN_RANGE 50
+#define FSR_DEBUG_BAR_STEP 50
+#define FSR_DEBUG_BAR_WIDTH 40
 
 #undef ADC_RESOLUTION
 #define ADC_RESOLUTION ADC_CFGR1_RES_12BIT
-
-#ifdef CONSOLE_ENABLE
-#define DDYO_DEBUG
-#endif
 
 #undef SPLIT_MAX_CONNECTION_ERRORS
 #define SPLIT_MAX_CONNECTION_ERRORS 0

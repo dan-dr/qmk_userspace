@@ -19,13 +19,9 @@
 #include "argos.h"
 #include "keypeek_layer_notify.h"
 
-#ifdef DDYO_DEBUG
-#    include "print.h"
-#endif // DDYO_DEBUG
-
-#if defined(CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_ENABLE) || defined(FSR_ENABLE)
+#ifdef FSR_ENABLE
 #    include "timer.h"
-#endif // CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_ENABLE || FSR_ENABLE
+#endif // FSR_ENABLE
 
 enum charybdis_keymap_layers {
     LAYER_BASE = 0,
@@ -37,50 +33,16 @@ enum charybdis_keymap_layers {
 /** \brief Automatically enable sniping-mode on the pointer layer. */
 // #define CHARYBDIS_AUTO_SNIPING_ON_LAYER LAYER_POINTER
 
-#ifdef CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_ENABLE
-static uint16_t auto_pointer_layer_timer = 0;
+#ifdef POINTING_DEVICE_AUTO_MOUSE_ENABLE
+void pointing_device_init_user(void) {
+    set_auto_mouse_layer(LAYER_POINTER);
+    set_auto_mouse_enable(true);
+}
+#endif // POINTING_DEVICE_AUTO_MOUSE_ENABLE
 
-#    ifndef CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_TIMEOUT_MS
-#        define CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_TIMEOUT_MS 1000
-#    endif // CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_TIMEOUT_MS
-
-#    ifndef CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_THRESHOLD
-#        define CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_THRESHOLD 8
-#    endif // CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_THRESHOLD
-#endif     // CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_ENABLE
-
-#if defined(FSR_ENABLE) && defined(FSR_PIN) && defined(FSR_THRESHOLD)
-#    ifndef FSR_RELEASE_THRESHOLD
-#        define FSR_RELEASE_THRESHOLD (FSR_THRESHOLD / 2)
-#    endif // FSR_RELEASE_THRESHOLD
-
-#    ifndef FSR_SCAN_INTERVAL_MS
-#        define FSR_SCAN_INTERVAL_MS 20
-#    endif // FSR_SCAN_INTERVAL_MS
-
-#    ifndef FSR_DEBUG_INTERVAL_MS
-#        define FSR_DEBUG_INTERVAL_MS 100
-#    endif // FSR_DEBUG_INTERVAL_MS
-
-#    ifndef FSR_DEBUG_ADC_MAX
-#        define FSR_DEBUG_ADC_MAX 4095
-#    endif // FSR_DEBUG_ADC_MAX
-
-#    ifndef FSR_DEBUG_BAR_MIN_RANGE
-#        define FSR_DEBUG_BAR_MIN_RANGE 50
-#    endif // FSR_DEBUG_BAR_MIN_RANGE
-
-#    ifndef FSR_DEBUG_BAR_STEP
-#        define FSR_DEBUG_BAR_STEP 50
-#    endif // FSR_DEBUG_BAR_STEP
-
-#    ifndef FSR_DEBUG_BAR_WIDTH
-#        define FSR_DEBUG_BAR_WIDTH 40
-#    endif // FSR_DEBUG_BAR_WIDTH
-
+#ifdef FSR_ENABLE
 static bool     fsr_pressed    = false;
 static uint16_t fsr_scan_timer = 0;
-#    ifdef DDYO_DEBUG
 static uint16_t fsr_debug_timer = 0;
 static int16_t  fsr_max_reading = 0;
 
@@ -117,8 +79,6 @@ static void fsr_debug_log(int16_t reading, bool state_changed) {
         dprint("\n");
     }
 }
-#    endif // DDYO_DEBUG
-
 static void fsr_scan(void) {
     if (fsr_scan_timer != 0 && timer_elapsed(fsr_scan_timer) < FSR_SCAN_INTERVAL_MS) {
         return;
@@ -126,49 +86,34 @@ static void fsr_scan(void) {
     fsr_scan_timer = timer_read();
 
     int16_t reading = analogReadPin(FSR_PIN);
-#    ifdef DDYO_DEBUG
     bool fsr_state_changed = false;
 
     if (reading > fsr_max_reading) {
         fsr_max_reading = reading;
     }
-#    endif // DDYO_DEBUG
 
     if (!fsr_pressed && reading > FSR_THRESHOLD) {
         fsr_pressed = true;
-#    ifdef DDYO_DEBUG
         fsr_state_changed = true;
-#    endif // DDYO_DEBUG
         // register_code16(KC_BTN1);
     } else if (fsr_pressed && reading < FSR_RELEASE_THRESHOLD) {
         fsr_pressed = false;
-#    ifdef DDYO_DEBUG
         fsr_state_changed = true;
-#    endif // DDYO_DEBUG
         // unregister_code16(KC_BTN1);
     }
 
-#    ifdef DDYO_DEBUG
     if (debug_enable && (fsr_state_changed || fsr_debug_timer == 0 || timer_elapsed(fsr_debug_timer) >= FSR_DEBUG_INTERVAL_MS)) {
         fsr_debug_timer = timer_read();
         fsr_debug_log(reading, fsr_state_changed);
     }
-#    endif // DDYO_DEBUG
 }
-#endif // FSR_ENABLE && FSR_PIN && FSR_THRESHOLD
+#endif // FSR_ENABLE
 
 #define LOWER MO(LAYER_LOWER)
 #define RAISE MO(LAYER_RAISE)
 #define PT_Z LT(LAYER_POINTER, KC_Z)
 #define PT_SLSH LT(LAYER_POINTER, KC_SLSH)
 #define PT_COMM LT(LAYER_POINTER, KC_COMM)
-
-#ifndef POINTING_DEVICE_ENABLE
-#    define DRGSCRL KC_NO
-#    define DPI_MOD KC_NO
-#    define S_D_MOD KC_NO
-#    define SNIPING KC_NO
-#endif // !POINTING_DEVICE_ENABLE
 
 // clang-format off
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -234,41 +179,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 };
 // clang-format on
 
-#ifdef POINTING_DEVICE_ENABLE
-#    ifdef CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_ENABLE
-report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
-    if (abs(mouse_report.x) > CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_THRESHOLD || abs(mouse_report.y) > CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_THRESHOLD) {
-        if (auto_pointer_layer_timer == 0) {
-            layer_on(LAYER_POINTER);
-#        ifdef RGB_MATRIX_ENABLE
-            rgb_matrix_mode_noeeprom(RGB_MATRIX_NONE);
-            rgb_matrix_sethsv_noeeprom(HSV_GREEN);
-#        endif // RGB_MATRIX_ENABLE
-        }
-        auto_pointer_layer_timer = timer_read();
-    }
-    return mouse_report;
-}
-#    endif // CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_ENABLE
-#endif     // POINTING_DEVICE_ENABLE
-
-#if defined(CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_ENABLE) || defined(FSR_ENABLE)
+#ifdef FSR_ENABLE
 void matrix_scan_user(void) {
-#    ifdef CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_ENABLE
-    if (auto_pointer_layer_timer != 0 && TIMER_DIFF_16(timer_read(), auto_pointer_layer_timer) >= CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_TIMEOUT_MS) {
-        auto_pointer_layer_timer = 0;
-        layer_off(LAYER_POINTER);
-#        ifdef RGB_MATRIX_ENABLE
-        rgb_matrix_mode_noeeprom(RGB_MATRIX_DEFAULT_MODE);
-#        endif // RGB_MATRIX_ENABLE
-    }
-#    endif // CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_ENABLE
-
-#    if defined(FSR_ENABLE) && defined(FSR_PIN) && defined(FSR_THRESHOLD)
     fsr_scan();
-#    endif // FSR_ENABLE && FSR_PIN && FSR_THRESHOLD
 }
-#endif // CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_ENABLE || FSR_ENABLE
+#endif // FSR_ENABLE
 
 #ifdef POINTING_DEVICE_ENABLE
 #    ifdef CHARYBDIS_AUTO_SNIPING_ON_LAYER
@@ -298,15 +213,6 @@ bool shutdown_user(bool jump_to_bootloader) {
     return true;
 }
 
-#ifdef DDYO_DEBUG
-void keyboard_post_init_user(void) {
-  debug_enable = false;
-  debug_matrix = true;
-  debug_mouse = false;
-}
-
-#endif
-
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
      return true;
 }
@@ -314,9 +220,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 /* Both Argos and KeyPeek want via_command_kb; share one handler. */
 bool via_command_kb(uint8_t *data, uint8_t length) {
     if (keypeek_handle_command(data, length)) {
-#ifdef DDYO_DEBUG
-        dprintf("KeyPeek: subscription handled, state=0x%02X\n", length > 1 ? data[1] : 0);
-#endif
         return true;
     }
     return argos_handle_command(data, length);

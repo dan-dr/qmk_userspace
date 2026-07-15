@@ -1,6 +1,3 @@
 {
-    "modules": [
-        "bastardkb/argos",
-        "srwi/keypeek_layer_notify"
-    ]
+  "modules": ["bastardkb/argos", "srwi/keypeek_layer_notify"]
 }

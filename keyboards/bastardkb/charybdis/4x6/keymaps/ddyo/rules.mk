@@ -6,8 +6,8 @@ RGBLIGHT_SUPPORTED = no    # RGB underglow is supported, but not enabled by defa
 RGB_MATRIX_ENABLE = no     # Enable keyboard RGB matrix functionality
 
 
-# TAP_DANCE_ENABLE = yes
-# COMBO_ENABLE = yes
+TAP_DANCE_ENABLE = yes
+COMBO_ENABLE = yes
 CAPS_WORD_ENABLE = yes
 MOUSEKEY_ENABLE = yes
 NKRO_ENABLE = yes            # Enable N-Key Rollover
