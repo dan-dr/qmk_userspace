@@ -41,7 +41,9 @@ void pointing_device_init_user(void) {
 
 bool is_mouse_record_user(uint16_t keycode, keyrecord_t *record) {
     (void)record;
-    return keycode == DRAGSCROLL_MODE || keycode == SNIPING_MODE;
+    // Track physical pointer-layer actions. Tracking Tap Dance's synthesized
+    // drag-scroll hold action can leave Auto Mouse's key counter stuck.
+    return keycode == TD(2) || keycode == SNIPING_MODE;
 }
 #endif // POINTING_DEVICE_AUTO_MOUSE_ENABLE
 
