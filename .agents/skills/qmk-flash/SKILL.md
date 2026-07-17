@@ -1,6 +1,6 @@
 ---
 name: qmk-flash
-description: Flash QMK firmware from this userspace repository. Use whenever the user asks to flash, reflash, install, or deploy firmware to a keyboard or either half of a split keyboard. Infer the keyboard, keymap, and half scope from recent context before asking, use the structured question tool for unresolved choices when available, flash the master half first or the right half when the master cannot be determined, announce bootloader waits, and remain attached until every required half succeeds or fails.
+description: Flash QMK firmware from this userspace repository. Use whenever the user asks to flash, reflash, install, or deploy firmware to a keyboard or either half of a split keyboard. Infer the keyboard, keymap, and half scope from recent context before asking, route Charybdis flashes through the backup-flash-restore mise task, start compilation immediately without waiting for a ready confirmation, flash the master half first or the right half when the master cannot be determined, announce state waits, and remain attached until every required half and Argos restoration succeeds or fails.
 ---
 
 # QMK Flash
@@ -13,8 +13,38 @@ Flash a selected userspace target while keeping the user informed during physica
 - Do not flash from an existing firmware artifact unless the user explicitly requests that artifact.
 - Run from the repository root.
 - Use the repository environment through `mise exec --` so `QMK_HOME` and `QMK_USERSPACE` match `mise.toml`.
+- For `bastardkb/charybdis/4x6/splinktegrated_rev1:ddyo`, always use the repository's guarded `qmk flash` route or the backup-flash-restore mise task described below.
+- The mise environment deliberately shadows `qmk` with `bin/qmk`. It routes a Charybdis `qmk flash` to the backup-first wrapper. Do not bypass that guard or set `QMK_FLASH_GUARD_BYPASS`; the approved wrapper scopes its own bypass after backup.
+- Never pass `--no-backup` to the Charybdis wrapper unless the user explicitly asks to bypass the Argos backup.
 - Before flashing, report the resolved keyboard, keymap, bootloader, and whether it is split.
+- Do not ask the user to reply `ready` before compilation. Start immediately after preflight and any required backup.
+- For an RP2040 target, tell the user they may enter bootloader while compilation runs or wait until QMK announces that it is waiting.
+- Do not use user input prompts as synchronization. Inspect the running command and attached USB/HID state, announce the required physical state, and keep waiting.
 - Keep the flash process attached. Do not claim success from compilation alone.
+- For guarded Charybdis flashes, do not claim completion until `argosctl restore` has restored and verified the tracked backup on the right/trackball half.
+
+## Backup-flash-restore Charybdis route
+
+The Charybdis stores user configuration through Argos. Its safe flash tasks export
+the connected right/trackball half to `backups/argos/charybdis.json` before QMK
+runs. A failed backup aborts without flashing. After every requested half
+succeeds, the task waits for the right half over normal USB, restores that file,
+and reads the configuration back to verify it.
+
+Use exactly one task matching the requested scope:
+
+```sh
+mise exec -- qmk flash # both halves through the guarded wrapper
+mise run flash        # both halves, alias: mise run qf
+mise run flash-right  # right half, alias: mise run qfr
+mise run flash-left   # left half, alias: mise run qfl
+mise run backup       # backup only, alias: mise run qb
+```
+
+Run the selected task in a PTY and remain attached. For both halves, the wrapper
+handles right-first ordering, starts each compile immediately, watches for the
+required device state, and performs the final Argos restore. Never add a user
+confirmation checkpoint and do not start separate direct commands around it.
 
 ## Infer the target and scope
 
@@ -58,7 +88,7 @@ Flash a selected userspace target while keeping the user informed during physica
 
 ## Flash interactively
 
-Run the exact target in a PTY:
+For targets without a repository safety wrapper, run the exact target in a PTY:
 
 ```sh
 mise exec -- qmk flash -kb <keyboard> -km <keymap>
@@ -74,14 +104,21 @@ When output says it is waiting for a reset, bootloader, serial port, drive, or d
 4. Continue polling the same process while the user performs the physical action. An unchanged wait is normal, not a blocker.
 5. Report success only after the flash command exits successfully. On failure, quote the decisive error and stop before flashing another half unless retrying the same safe step is clearly appropriate.
 
+Do not wait for a user confirmation before starting a compile. On RP2040, the
+user may place the requested half in bootloader while compilation runs; if they
+do not, wait for the running QMK process to reach its bootloader prompt before
+asking for the physical reset.
+
 ## Split keyboards
 
-Flash split keyboards twice because each half has its own controller.
+For targets without a split-aware repository wrapper, flash split keyboards
+twice because each half has its own controller. The guarded Charybdis task is
+the exception: run it once and let its state-aware wrapper drive both flashes.
 
-1. Ask the user to connect the determined master half directly over USB. If no master was determined, ask for the right half. Start the first `qmk flash` command.
+1. Start the first `qmk flash` command immediately for the determined master half. If no master was determined, use the right half. Tell the user which half is compiling and that they may enter RP2040 bootloader now or wait for the bootloader announcement.
 2. Announce that half's bootloader wait and remain attached until the command succeeds.
-3. Tell the user the first half succeeded and ask them to connect the remaining half directly over USB.
-4. Start a new, identical `qmk flash` command for the remaining half.
+3. Tell the user the first half succeeded, then start a new, identical `qmk flash` command for the remaining half without waiting for confirmation.
+4. Tell the user which remaining half is compiling and that they may connect it and enter RP2040 bootloader now or wait for the bootloader announcement.
 5. Announce the remaining half's bootloader wait and remain attached until it succeeds.
 6. Report separate outcomes for both halves in the order flashed.
 
@@ -92,13 +129,17 @@ If context resolves to one half, flash only that half and state the scope. Never
 - `rp2040`: use `QK_BOOT`, hold BOOTSEL while connecting USB, or use the documented double-tap reset method.
 - `caterina`: press reset when QMK begins waiting for the bootloader serial port.
 
-Do not tell the user to reset early. Wait until the running command is ready unless its output explicitly instructs otherwise.
+For RP2040, it is safe to offer both choices: enter bootloader while compilation
+runs, or wait until QMK is ready. For bootloaders with a short-lived window,
+wait until the running command explicitly asks for the device.
 
 ## Completion report
 
 Report:
 
 - Canonical keyboard and keymap
+- Argos backup outcome and path when the Charybdis safety task was used
+- Argos restore and read-back verification outcome
 - One outcome per flashed half
 - Flash command exit status
 - Any half not flashed or any remaining physical action

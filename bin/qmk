@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+real_qmk="${QMK_REAL_BIN:-$HOME/.local/bin/qmk}"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+charybdis_keyboard="bastardkb/charybdis/4x6/splinktegrated_rev1"
+
+if [[ ! -x "$real_qmk" ]]; then
+    printf 'qmk guard: real QMK executable not found at %s\n' "$real_qmk" >&2
+    exit 127
+fi
+
+if [[ "${1:-}" == "flash" && "${QMK_FLASH_GUARD_BYPASS:-}" != "backup-first-wrapper" ]]; then
+    original_args=("$@")
+    keyboard=""
+    for ((index = 1; index < ${#original_args[@]}; index++)); do
+        case "${original_args[$index]}" in
+            -kb|--keyboard)
+                ((index++))
+                if ((index < ${#original_args[@]})); then
+                    keyboard="${original_args[$index]}"
+                fi
+                ;;
+            --keyboard=*)
+                keyboard="${original_args[$index]#*=}"
+                ;;
+        esac
+    done
+
+    if [[ -n "$keyboard" && "$keyboard" != "$charybdis_keyboard" ]]; then
+        exec "$real_qmk" "${original_args[@]}"
+    fi
+
+    keymap=""
+    wrapper_args=()
+    shift
+    while (($#)); do
+        case "$1" in
+            -kb|--keyboard)
+                [[ $# -ge 2 ]] || { printf 'qmk guard: %s requires a value\n' "$1" >&2; exit 64; }
+                keyboard="$2"
+                shift 2
+                ;;
+            --keyboard=*)
+                keyboard="${1#*=}"
+                shift
+                ;;
+            -km|--keymap)
+                [[ $# -ge 2 ]] || { printf 'qmk guard: %s requires a value\n' "$1" >&2; exit 64; }
+                keymap="$2"
+                shift 2
+                ;;
+            --keymap=*)
+                keymap="${1#*=}"
+                shift
+                ;;
+            -h|--help)
+                wrapper_args+=(--help)
+                shift
+                ;;
+            -n|--dry-run)
+                wrapper_args+=(--dry-run)
+                shift
+                ;;
+            *)
+                printf 'qmk guard: unsupported Charybdis flash argument: %s\n' "$1" >&2
+                printf 'Use mise run flash, or call qmk flash without arguments.\n' >&2
+                exit 64
+                ;;
+        esac
+    done
+
+    if [[ -n "$keymap" && "$keymap" != "ddyo" ]]; then
+        printf 'qmk guard: the backup-first Charybdis wrapper supports only keymap ddyo\n' >&2
+        exit 64
+    fi
+
+    exec "$repo_root/bin/flash-charybdis" "${wrapper_args[@]}"
+fi
+
+exec "$real_qmk" "$@"

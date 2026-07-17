@@ -1,0 +1,86 @@
+#!/usr/bin/env nu
+
+def main [
+    --half: string = "both" # Half to flash: right, left, or both
+    --backup-only            # Export Argos without flashing
+    --no-backup              # Flash without exporting Argos first
+    --output: path           # Argos backup path
+    --dry-run                # Print the planned actions only
+] {
+    let valid_halves = [right left both]
+    if $half not-in $valid_halves {
+        error make {msg: $"invalid --half '($half)'; expected right, left, or both"}
+    }
+    if $backup_only and $no_backup {
+        error make {msg: "--backup-only and --no-backup cannot be used together"}
+    }
+
+    let repo = ($env.FILE_PWD | path dirname)
+    let backup_path = if $output == null {
+        $repo | path join "backups" "argos" "charybdis.json"
+    } else {
+        $output | path expand
+    }
+    let backup_command = [
+        cargo run --quiet --locked
+        --manifest-path ($repo | path join "tools" "argosctl" "Cargo.toml")
+        -- backup --output $backup_path --force --wait --require-right-half
+    ]
+    let restore_command = [
+        cargo run --quiet --locked
+        --manifest-path ($repo | path join "tools" "argosctl" "Cargo.toml")
+        -- restore --input $backup_path --wait --require-right-half
+    ]
+    let flash_command = [
+        mise exec -- qmk flash
+        -kb bastardkb/charybdis/4x6/splinktegrated_rev1
+        -km ddyo
+    ]
+
+    if $dry_run {
+        if not $no_backup {
+            print $"Backup: ($backup_command | str join ' ')"
+        }
+        if not $backup_only {
+            let halves = if $half == "both" { [right left] } else { [$half] }
+            for current_half in $halves {
+                print $"Flash ($current_half): ($flash_command | str join ' ')"
+            }
+            if not $no_backup {
+                print $"Restore: ($restore_command | str join ' ')"
+            }
+        }
+        return
+    }
+
+    cd $repo
+    if not $no_backup {
+        print $"Backing up Argos to ($backup_path)"
+        run-external ...$backup_command
+        if $env.LAST_EXIT_CODE != 0 {
+            error make {msg: "Argos backup failed; nothing was flashed"}
+        }
+    }
+    if $backup_only {
+        return
+    }
+
+    let halves = if $half == "both" { [right left] } else { [$half] }
+    for current_half in $halves {
+        print $"Starting QMK for the ($current_half) half; enter bootloader now or when QMK begins waiting"
+        with-env {QMK_FLASH_GUARD_BYPASS: "backup-first-wrapper"} {
+            run-external ...$flash_command
+        }
+        if $env.LAST_EXIT_CODE != 0 {
+            error make {msg: $"QMK flash failed for the ($current_half) half"}
+        }
+    }
+
+    if not $no_backup {
+        print "Waiting for the right/trackball half over normal USB to restore Argos"
+        run-external ...$restore_command
+        if $env.LAST_EXIT_CODE != 0 {
+            error make {msg: "Argos restore or verification failed after flashing"}
+        }
+    }
+}
