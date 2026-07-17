@@ -1,10 +1,59 @@
 #!/usr/bin/env nu
 
+def tracked-backup-target [repo: path, backup_path: path] {
+    let backup_relative = try {
+        $backup_path | path relative-to $repo
+    } catch {
+        error make {msg: $"Argos backup must stay inside the repository so it can be committed: ($backup_path)"}
+    }
+    let tracked = (^git -C $repo ls-files --error-unmatch -- $backup_relative | complete)
+    if $tracked.exit_code == 0 {
+        return {relative: $backup_relative, commit_paths: [$backup_relative]}
+    }
+
+    let backup_hash = (^git -C $repo hash-object -- $backup_relative | str trim)
+    let deleted_paths = (^git -C $repo ls-files --deleted | lines)
+    mut moved_from = null
+    for candidate in $deleted_paths {
+        let candidate_hash = (^git -C $repo rev-parse $"HEAD:($candidate)" | str trim)
+        if $candidate_hash == $backup_hash {
+            $moved_from = $candidate
+            break
+        }
+    }
+    if $moved_from == null {
+        error make {msg: $"Argos backup path must already be tracked by Git: ($backup_relative)"}
+    }
+    {relative: $backup_relative, commit_paths: [$backup_relative $moved_from]}
+}
+
+def commit-argos-backup [repo: path, backup_relative: path, commit_paths: list<string>] {
+    ^git -C $repo add --intent-to-add -- $backup_relative
+    if $env.LAST_EXIT_CODE != 0 {
+        error make {msg: $"Could not prepare Argos backup for commit: ($backup_relative)"}
+    }
+
+    let diff = (^git -C $repo diff --quiet HEAD -- ...$commit_paths | complete)
+    if $diff.exit_code == 0 {
+        print "Argos backup unchanged; no commit needed"
+        return
+    }
+    if $diff.exit_code != 1 {
+        error make {msg: $"Could not inspect Argos backup changes: ($backup_relative)"}
+    }
+
+    print $"Committing Argos backup: ($backup_relative)"
+    ^git -C $repo commit --only -m "chore: update Argos backup" -- ...$commit_paths
+    if $env.LAST_EXIT_CODE != 0 {
+        error make {msg: "Argos backup commit failed; nothing was flashed"}
+    }
+}
+
 def main [
     --half: string = "both" # Half to flash: right, left, or both
     --backup-only            # Export Argos without flashing
     --no-backup              # Flash without exporting Argos first
-    --output: path           # Argos backup path
+    --output: path           # Tracked Argos backup path inside this repository
     --dry-run                # Print the planned actions only
 ] {
     let valid_halves = [right left both]
@@ -17,10 +66,16 @@ def main [
 
     let repo = ($env.FILE_PWD | path dirname)
     let backup_path = if $output == null {
-        $repo | path join "backups" "argos" "charybdis.json"
+        $repo | path join "keyboards" "bastardkb" "charybdis" "4x6" "keymaps" "ddyo" "argos.json"
     } else {
         $output | path expand
     }
+    let backup_target = if $no_backup {
+        null
+    } else {
+        tracked-backup-target $repo $backup_path
+    }
+    let backup_relative = if $no_backup { null } else { $backup_target.relative }
     let backup_command = [
         cargo run --quiet --locked
         --manifest-path ($repo | path join "tools" "argosctl" "Cargo.toml")
@@ -40,6 +95,7 @@ def main [
     if $dry_run {
         if not $no_backup {
             print $"Backup: ($backup_command | str join ' ')"
+            print $"Commit if changed: ($backup_relative) as 'chore: update Argos backup'"
         }
         if not $backup_only {
             let halves = if $half == "both" { [right left] } else { [$half] }
@@ -60,6 +116,7 @@ def main [
         if $env.LAST_EXIT_CODE != 0 {
             error make {msg: "Argos backup failed; nothing was flashed"}
         }
+        commit-argos-backup $repo $backup_relative $backup_target.commit_paths
     }
     if $backup_only {
         return

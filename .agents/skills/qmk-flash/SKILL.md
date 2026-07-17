@@ -26,10 +26,13 @@ Flash a selected userspace target while keeping the user informed during physica
 ## Backup-flash-restore Charybdis route
 
 The Charybdis stores user configuration through Argos. Its safe flash tasks export
-the connected right/trackball half to `backups/argos/charybdis.json` before QMK
-runs. A failed backup aborts without flashing. After every requested half
-succeeds, the task waits for the right half over normal USB, restores that file,
-and reads the configuration back to verify it.
+the connected right/trackball half to
+`keyboards/bastardkb/charybdis/4x6/keymaps/ddyo/argos.json` before QMK runs, then
+commits that file if it changed. The commit is path-scoped and leaves
+unrelated staged or working-tree changes untouched. A failed backup or commit
+aborts without flashing. After every requested half succeeds, the task waits for
+the right half over normal USB, restores that file, and reads the configuration
+back to verify it.
 
 Use exactly one task matching the requested scope:
 
@@ -138,7 +141,7 @@ wait until the running command explicitly asks for the device.
 Report:
 
 - Canonical keyboard and keymap
-- Argos backup outcome and path when the Charybdis safety task was used
+- Argos backup and commit outcome plus path when the Charybdis safety task was used
 - Argos restore and read-back verification outcome
 - One outcome per flashed half
 - Flash command exit status

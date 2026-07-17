@@ -31,10 +31,11 @@ qmk flash -kb sofle/rev1 -km ddyo
 qmk flash # guarded Charybdis backup + both halves + restore
 ```
 
-The Charybdis flash task waits for the normal right/trackball half, saves an
-Argos-compatible JSON backup, flashes the right half and then the left half,
-then waits for the right half again to restore and verify Argos. A failed backup
-aborts before QMK runs, and the task does not finish until restoration succeeds.
+The Charybdis flash task waits for the normal right/trackball half, saves and
+commits an Argos-compatible JSON backup, flashes the right half and then the
+left half, then waits for the right half again to restore and verify Argos. A
+failed backup or commit aborts before QMK runs, and the task does not finish
+until restoration succeeds.
 
 ```nu
 qmk flash            # backup, flash both halves, restore, verify
@@ -44,10 +45,14 @@ mise run flash-left  # alias: mise run qfl
 mise run backup      # alias: mise run qb
 ```
 
-The current backup is kept at `backups/argos/charybdis.json`. Commit it normally;
-later backups replace the same file so Git records and merges the changes. Close
-Argos and KeyPeek if another app consumes the Raw HID replies during backup.
-Use `./bin/flash-charybdis --no-backup` only as an explicit emergency bypass.
+The current backup is kept beside the keymap at
+`keyboards/bastardkb/charybdis/4x6/keymaps/ddyo/argos.json`. Every successful
+changed backup commits only that file as `chore: update Argos backup`; unchanged
+backups do not create empty commits. Unrelated staged and working-tree changes
+are left untouched. A custom `--output` must already be tracked inside this
+repository so the same safety guarantee applies. Close Argos and KeyPeek if
+another app consumes the Raw HID replies during backup. Use
+`./bin/flash-charybdis --no-backup` only as an explicit emergency bypass.
 
 Mise prepends a repository guard for `qmk`. In this userspace, `qmk flash` and an
 explicit Charybdis `qmk flash -kb ... -km ddyo` both route to the backup-first

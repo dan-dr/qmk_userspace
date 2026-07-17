@@ -6,24 +6,24 @@ QMK_USERSPACE = "{{config_root}}"
 
 [tasks.flash-charybdis]
 alias = ["flash", "qf"]
-description = "Back up Argos, flash both Charybdis halves, then restore Argos"
+description = "Back up and commit Argos, flash both Charybdis halves, then restore Argos"
 raw = true
 run = "./bin/flash-charybdis"
 
 [tasks.flash-charybdis-right]
 alias = ["flash-right", "qfr"]
-description = "Back up Argos, flash the right Charybdis half, then restore Argos"
+description = "Back up and commit Argos, flash the right Charybdis half, then restore Argos"
 raw = true
 run = "./bin/flash-charybdis --half right"
 
 [tasks.flash-charybdis-left]
 alias = ["flash-left", "qfl"]
-description = "Back up Argos, flash the left Charybdis half, then restore Argos"
+description = "Back up and commit Argos, flash the left Charybdis half, then restore Argos"
 raw = true
 run = "./bin/flash-charybdis --half left"
 
 [tasks.backup-argos]
 alias = ["backup", "qb"]
-description = "Back up Argos without flashing"
+description = "Back up and commit Argos without flashing"
 raw = true
 run = "./bin/flash-charybdis --backup-only"
