@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'" />
+    <title>Argos Configuration History</title>
+    <link rel="stylesheet" href="history.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Local, immutable snapshots</p>
+          <h1>Configuration History</h1>
+        </div>
+        <div class="toolbar">
+          <button id="reveal-button" class="button secondary" type="button">Show files</button>
+          <button id="audit-button" class="button secondary" type="button">Export audit log</button>
+          <button id="export-button" class="button primary" type="button" disabled>Export configuration</button>
+        </div>
+      </header>
+
+      <section class="workspace">
+        <aside class="timeline-panel" aria-label="Configuration snapshots">
+          <div class="panel-heading">
+            <span>Snapshots</span>
+            <span id="snapshot-count" class="count">0</span>
+          </div>
+          <div id="snapshot-list" class="snapshot-list"></div>
+          <div id="empty-state" class="empty-state" hidden>
+            <span class="empty-mark">A</span>
+            <strong>No snapshots yet</strong>
+            <p>Connect your keyboard in Argos. The first complete configuration is saved automatically.</p>
+          </div>
+        </aside>
+
+        <section class="detail-panel">
+          <div id="detail-placeholder" class="detail-placeholder">
+            <span>Select a snapshot to inspect its exact changes.</span>
+          </div>
+          <article id="detail" hidden>
+            <header class="detail-heading">
+              <div>
+                <p id="detail-time" class="eyebrow"></p>
+                <h2 id="detail-summary"></h2>
+                <p id="detail-reason" class="muted"></p>
+              </div>
+              <div class="hash-block">
+                <span>SHA-256</span>
+                <code id="detail-hash"></code>
+              </div>
+            </header>
+
+            <div id="warning-list" class="warning-list" hidden></div>
+
+            <nav class="tabs" aria-label="Snapshot detail">
+              <button class="tab active" type="button" data-tab="diff">Diff</button>
+              <button class="tab" type="button" data-tab="config">Full configuration</button>
+            </nav>
+
+            <section id="diff-view" class="tab-view">
+              <div id="diff-list" class="diff-list"></div>
+            </section>
+            <section id="config-view" class="tab-view" hidden>
+              <pre id="config-json"></pre>
+            </section>
+          </article>
+        </section>
+      </section>
+
+      <footer class="statusbar">
+        <span id="storage-path"></span>
+        <span id="action-status" role="status" aria-live="polite"></span>
+      </footer>
+    </main>
+    <script src="history.js"></script>
+  </body>
+</html>

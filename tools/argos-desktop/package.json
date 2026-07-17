@@ -1,0 +1,44 @@
+{
+  "name": "argos-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Argos desktop shell with immutable local configuration history",
+  "type": "module",
+  "main": "src/main.mjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test",
+    "check": "node --check src/main.mjs && node --check src/history-store.mjs && node --check src/validation.mjs && node --check src/diff.mjs && node --check src/injected/argos-audit.cjs && node --check src/preload/argos-preload.cjs && node --check src/preload/history-preload.cjs && node --check src/history/history.js",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "refresh": "./script/build_and_run.sh",
+    "refresh:verify": "./script/build_and_run.sh --verify"
+  },
+  "devDependencies": {
+    "electron": "43.1.1",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.ddyo.argos-desktop",
+    "productName": "Argos Desktop",
+    "asar": true,
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "category": "public.app-category.utilities",
+      "identity": null,
+      "target": [
+        "dir"
+      ]
+    }
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "packageManager": "pnpm@10.25.0"
+}
