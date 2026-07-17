@@ -7,6 +7,7 @@ RGB_MATRIX_ENABLE = no     # Enable keyboard RGB matrix functionality
 
 
 TAP_DANCE_ENABLE = yes
+DYNAMIC_TAPPING_TERM_ENABLE = yes
 COMBO_ENABLE = yes
 CAPS_WORD_ENABLE = yes
 MOUSEKEY_ENABLE = yes

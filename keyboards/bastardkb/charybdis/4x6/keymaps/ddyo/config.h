@@ -28,6 +28,10 @@
 /* Disable unused features. */
 #define NO_ACTION_ONESHOT
 
+/* Tap-hold behavior. */
+#define SPECULATIVE_HOLD
+#define FLOW_TAP_TERM 150
+
 /* Charybdis-specific features. */
 
 /*
@@ -67,8 +71,8 @@
 #define POINTING_DEVICE_CS_PIN GP21
 
 /* Automatically enable the pointer layer when moving the trackball. */
-// #define POINTING_DEVICE_AUTO_MOUSE_ENABLE
-#define AUTO_MOUSE_TIME 1000
+#define POINTING_DEVICE_AUTO_MOUSE_ENABLE
+#define AUTO_MOUSE_TIME 1700
 #define AUTO_MOUSE_THRESHOLD 10
 
 #undef USB_VBUS_PIN

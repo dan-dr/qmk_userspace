@@ -38,6 +38,11 @@ void pointing_device_init_user(void) {
     set_auto_mouse_layer(LAYER_POINTER);
     set_auto_mouse_enable(true);
 }
+
+bool is_mouse_record_user(uint16_t keycode, keyrecord_t *record) {
+    (void)record;
+    return keycode == DRAGSCROLL_MODE || keycode == SNIPING_MODE;
+}
 #endif // POINTING_DEVICE_AUTO_MOUSE_ENABLE
 
 #ifdef FSR_ENABLE
@@ -114,6 +119,12 @@ static void fsr_scan(void) {
 #define PT_Z LT(LAYER_POINTER, KC_Z)
 #define PT_SLSH LT(LAYER_POINTER, KC_SLSH)
 #define PT_COMM LT(LAYER_POINTER, KC_COMM)
+
+bool get_speculative_hold(uint16_t keycode, keyrecord_t *record) {
+    (void)record;
+    // RGUI speculative hold falsely triggers OS shortcuts (e.g. Start menu).
+    return IS_QK_MOD_TAP(keycode) && QK_MOD_TAP_GET_MODS(keycode) != MOD_RGUI;
+}
 
 // clang-format off
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
