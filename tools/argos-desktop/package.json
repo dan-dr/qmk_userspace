@@ -8,7 +8,7 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test",
-    "check": "node --check src/main.mjs && node --check src/history-store.mjs && node --check src/validation.mjs && node --check src/diff.mjs && node --check src/injected/argos-audit.cjs && node --check src/preload/argos-preload.cjs && node --check src/preload/history-preload.cjs && node --check src/history/history.js",
+    "check": "node --check src/main.mjs && node --check src/history-store.mjs && node --check src/validation.mjs && node --check src/diff.mjs && node --check src/injected/argos-state-hook.cjs && node --check src/injected/argos-audit.cjs && node --check src/preload/argos-preload.cjs && node --check src/preload/history-preload.cjs && node --check src/history/history.js",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "refresh": "./script/build_and_run.sh",

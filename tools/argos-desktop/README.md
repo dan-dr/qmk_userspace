@@ -7,7 +7,9 @@ app's narrowly scoped WebHID permission and triggers the live site's own Connect
 flow. It also reconnects after unplugging and replugging the keyboard. The live
 Connect button remains available if automatic connection cannot complete.
 
-Each successful Argos change triggers a full device read through the same WebHID handle. New content is saved as:
+Successful Argos changes are batched, then the same in-memory configuration used
+by Argos Export is serialized into history. History sends no additional HID
+requests and never blocks interactive keyboard changes. New content is saved as:
 
 - An immutable, Argos-compatible JSON snapshot
 - An exact JSON Pointer diff from the prior snapshot

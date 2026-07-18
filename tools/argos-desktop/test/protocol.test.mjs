@@ -4,47 +4,46 @@ import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
 const { installArgosAudit } = require("../src/injected/argos-audit.cjs");
+const { installArgosStateHook } = require("../src/injected/argos-state-hook.cjs");
 const protocol = installArgosAudit({});
 
-test("parses Argos keyboard info including protocol 4 pointer flags", () => {
-  const response = new Uint8Array([
-    0x90, 0x01, 0x00, 0x04, 50, 16, 4, 13, 0, 0, 8, 1, 0, 175, 0, 42, 1, 1, 0
-  ]);
-  assert.deepEqual(protocol.parseKeyboardInfo(response), {
-    protocol: 4,
-    tapDanceAmount: 50,
-    comboAmount: 16,
-    keysPerCombo: 4,
-    themeId: 13,
+function configFixture(overrides = {}) {
+  return {
+    viaProtocolVersion: 11,
+    argosProtocolVersion: 4,
     qmkKeycodesVersion: [0, 0, 8],
-    hasDisplayedWelcomeMessage: true,
-    tappingTerm: 175,
-    comboTerm: 42,
-    isLeftHanded: true,
-    autoMouseLayerEnabled: true,
-    autoPrecisionOnMouseLayerEnabled: false
-  });
+    pointingDeviceType: 2,
+    keycodes: [[4, 5]],
+    combos: [],
+    tapDances: [],
+    rgbMatrix: {},
+    themeId: 13,
+    ...overrides
+  };
+}
+
+test("captures and serializes the same reactive config object used by Argos Export", () => {
+  const root = { Proxy };
+  installArgosStateHook(root);
+
+  const config = new root.Proxy(configFixture(), {});
+  config.themeId = 16;
+
+  assert.equal(root.__argosDesktopConfig, config);
+  assert.equal(protocol.serializeCachedConfig(root), JSON.stringify(config));
 });
 
-test("parses combo and tap-dance entries with firmware byte order", () => {
-  const combo = new Uint8Array([
-    0x90, 0x02, 3, 1, 0x34, 0x12, 0x2a, 0, 4, 0, 5, 0, 0, 0, 7, 0
-  ]);
-  assert.deepEqual(protocol.parseCombo(combo, 4), {
-    enabled: true,
-    output: 0x1234,
-    input: [4, 5, 0, 0],
-    customTerm: 42
-  });
+test("ignores unrelated Vue proxies and follows replacement Argos configs", () => {
+  const root = { Proxy };
+  installArgosStateHook(root);
 
-  const tapDance = new Uint8Array([0x90, 0x07, 2, 4, 0, 5, 0, 6, 0, 7, 0, 175, 0]);
-  assert.deepEqual(protocol.parseTapDance(tapDance), {
-    on_tap: 4,
-    on_hold: 5,
-    on_double_tap: 6,
-    on_tap_hold: 7,
-    custom_tapping_term: 175
-  });
+  new root.Proxy({ keycodes: [] }, {});
+  assert.equal(root.__argosDesktopConfig, undefined);
+
+  const first = new root.Proxy(configFixture({ themeId: 1 }), {});
+  const second = new root.Proxy(configFixture({ themeId: 2 }), {});
+  assert.equal(root.__argosDesktopConfig, second);
+  assert.notEqual(root.__argosDesktopConfig, first);
 });
 
 test("recognizes every current Argos write command", () => {
@@ -55,19 +54,6 @@ test("recognizes every current Argos write command", () => {
   assert.equal(protocol.describeCommand(new Uint8Array([0x90, 0x15])), "per-key RGB change");
   assert.equal(protocol.isMutation(new Uint8Array([0x05])), true);
   assert.equal(protocol.describeCommand(new Uint8Array([0x05])), "keymap change");
-});
-
-test("parses per-key RGB state and maps split matrix offsets", () => {
-  assert.deepEqual(
-    protocol.parseRgbMatrixLed(new Uint8Array([0x90, 0x14, 12, 34, 56, 1, 0, 1])),
-    { r: 12, g: 34, b: 56, transparent: true, on: false, custom: true }
-  );
-
-  assert.deepEqual(protocol.rgbMatrixPositions([null, [0, 0], [2, 0]], 4, 1), [
-    { row: 0, column: 0, index: 1, offset: 0, layer: 0, key: "0:0:0" },
-    { row: 2, column: 0, index: 1, offset: 1, layer: 0, key: "0:2:0" },
-    { arrayIndex: 0, index: 0, offset: 0, layer: 0, key: "0:underglow:0" }
-  ]);
 });
 
 test("selects an authorized supported keyboard matching the live Argos filters", () => {
@@ -137,4 +123,64 @@ test("finds only the live page's enabled Connect button", () => {
   const document = { querySelectorAll: () => [disabled, history, connect] };
 
   assert.equal(protocol.findConnectButton(document), connect);
+});
+
+test("stores cached history without sending an additional HID request", async () => {
+  const snapshots = [];
+  let sends = 0;
+  class FakeHidDevice {
+    constructor() {
+      this.vendorId = 0xa8f8;
+      this.productId = 0x1833;
+      this.productName = "Charybdis";
+      this.opened = true;
+      this.listeners = new Set();
+    }
+
+    addEventListener(_name, listener) {
+      this.listeners.add(listener);
+    }
+
+    removeEventListener(_name, listener) {
+      this.listeners.delete(listener);
+    }
+
+    async sendReport(_reportId, data) {
+      sends += 1;
+      const response = new Uint8Array([data[0], data[1] ?? 0]);
+      queueMicrotask(() => {
+        for (const listener of this.listeners) listener({ data: new DataView(response.buffer) });
+      });
+    }
+  }
+  const hid = {
+    requestDevice: async () => [],
+    getDevices: async () => [],
+    addEventListener() {}
+  };
+  const root = {
+    __argosDesktopConfig: configFixture(),
+    __argosDesktopSnapshotDebounceMs: 0,
+    navigator: { hid },
+    argosAudit: {
+      openHistory() {},
+      async storeSnapshot(snapshot) {
+        snapshots.push(snapshot);
+        return { stored: true, count: snapshots.length, summary: "keymap change" };
+      }
+    },
+    HIDDevice: FakeHidDevice,
+    setTimeout,
+    clearTimeout,
+    console
+  };
+  installArgosAudit(root);
+  const device = new FakeHidDevice();
+
+  await device.sendReport(0, new Uint8Array([0x05]));
+  await new Promise((resolve) => setTimeout(resolve, 10));
+
+  assert.equal(sends, 1);
+  assert.equal(snapshots.length, 1);
+  assert.deepEqual(snapshots[0].config, root.__argosDesktopConfig);
 });
