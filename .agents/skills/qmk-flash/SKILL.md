@@ -13,6 +13,7 @@ Flash a selected userspace target while keeping the user informed during physica
 - Do not flash from an existing firmware artifact unless the user explicitly requests that artifact.
 - Run from the repository root.
 - Use the repository environment through `mise exec --` so `QMK_HOME` and `QMK_USERSPACE` match `mise.toml`.
+- Argos Raw HID access requires execution outside the managed sandbox on macOS. Launch the first backup, restore, or guarded Charybdis flash attempt with `require_escalated`; do not run a sandboxed probe first. Dan has granted standing approval for this escalation in this workspace.
 - For `bastardkb/charybdis/4x6/splinktegrated_rev1:ddyo`, always use the repository's guarded `qmk flash` route or the backup-flash-restore mise task described below.
 - The mise environment deliberately shadows `qmk` with `bin/qmk`. It routes a Charybdis `qmk flash` to the backup-first wrapper. Do not bypass that guard or set `QMK_FLASH_GUARD_BYPASS`; the approved wrapper scopes its own bypass after backup.
 - Never pass `--no-backup` to the Charybdis wrapper unless the user explicitly asks to bypass the Argos backup.
@@ -22,6 +23,28 @@ Flash a selected userspace target while keeping the user informed during physica
 - Do not use user input prompts as synchronization. Inspect the running command and attached USB/HID state, announce the required physical state, and keep waiting.
 - Keep the flash process attached. Do not claim success from compilation alone.
 - For guarded Charybdis flashes, do not claim completion until `argosctl restore` has restored and verified the tracked backup on the right/trackball half.
+
+## macOS HID access
+
+Run commands that open the Argos Raw HID interface outside the managed sandbox
+on their first attempt. This includes guarded Charybdis flashes, Argos-only
+backup or restore tasks, and direct `argosctl` backup or restore commands. When
+the execution tool supports reusable approvals, request a narrowly scoped rule
+for the selected repository command.
+
+Argos and KeyPeek use shared-device HID access and may remain open. Do not ask
+the user to close them as a precondition. If an escalated command still returns
+`0xE00002E2 not permitted`, stop before flashing and identify the host app that
+launched the command. Give the user this exact fallback:
+
+1. Open **System Settings > Privacy & Security > Input Monitoring**.
+2. Enable the launching host app, such as Codex, Visual Studio Code, or the
+   terminal app actually running the command.
+3. Quit and reopen that host app, then retry the same escalated command.
+
+Do not change macOS privacy settings or open System Settings without the user's
+permission. Do not treat an Input Monitoring change as necessary unless the
+first escalated attempt still fails.
 
 ## Backup-flash-restore Charybdis route
 
