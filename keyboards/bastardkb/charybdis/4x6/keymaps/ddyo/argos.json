@@ -16,7 +16,7 @@
   "rgbHue": 0,
   "rgbSat": 0,
   "pointingDeviceType": 2,
-  "defaultDPI": 1000,
+  "defaultDPI": 600,
   "minimumDefaultDpi": 400,
   "defaultDPIConfigStep": 200,
   "snipingDPI": 200,
@@ -462,7 +462,7 @@
     {
       "on_tap": 231,
       "on_hold": 231,
-      "on_double_tap": 231,
+      "on_double_tap": 0,
       "on_tap_hold": 230,
       "custom_tapping_term": 0
     },
