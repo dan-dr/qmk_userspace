@@ -393,8 +393,15 @@ fn open_device(
     loop {
         let attempt = ArgosDevice::open(vid, pid).and_then(|device| {
             let info = device.keyboard_info()?;
-            if require_right_half && info.is_left_handed {
-                return Err("connected Argos device is the left half; connect the right/trackball half over normal USB".to_owned());
+            if require_right_half {
+                let controller_is_left = if info.argos_protocol_version >= 4 {
+                    device.controller_is_left()?
+                } else {
+                    info.is_left_handed
+                };
+                if controller_is_left {
+                    return Err("connected Argos device is the left half; connect the right/trackball half over normal USB".to_owned());
+                }
             }
             Ok((device, info))
         });

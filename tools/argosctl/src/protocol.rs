@@ -126,6 +126,15 @@ impl ArgosDevice {
         KeyboardInfo::parse(&self.argos_command(0x01, &[])?)
     }
 
+    pub fn controller_is_left(&self) -> Result<bool, String> {
+        let response = self.argos_command(0x16, &[])?;
+        match response[2] {
+            0 => Ok(false),
+            1 => Ok(true),
+            value => Err(format!("keyboard reported invalid controller side {value}")),
+        }
+    }
+
     pub fn combos(&self, count: u8, keys_per_combo: u8) -> Result<Vec<Combo>, String> {
         (0..count)
             .map(|index| {
