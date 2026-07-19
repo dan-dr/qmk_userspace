@@ -283,7 +283,7 @@
   "combos": [
     {
       "enabled": true,
-      "output": 0,
+      "output": 28,
       "input": [
         0,
         0,
@@ -819,5 +819,7 @@
   "isLeftHanded": false,
   "autoMouseLayerEnabled": false,
   "autoPrecisionOnMouseLayerEnabled": false,
+  "invertXAxisDragscroll": false,
+  "invertYAxisDragscroll": false,
   "rgbMatrix": {}
 }
