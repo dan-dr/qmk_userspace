@@ -3,6 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { HistoryStore } from "./history-store.mjs";
+import { loadInjectMenuScripts } from "./inject-menu.mjs";
 
 const ARGOS_URL = "https://argos.bastardkb.com/";
 const ARGOS_ORIGIN = new URL(ARGOS_URL).origin;
@@ -20,6 +21,8 @@ let mainWindow = null;
 let historyWindow = null;
 let historyStore = null;
 let auditScript = "";
+/** @type {Array<{ id: string, label: string, detail: string, source: string }>} */
+let injectScripts = [];
 const configuredSessions = new WeakSet();
 
 function isArgosUrl(value) {
@@ -268,6 +271,58 @@ async function exportLatestFromMenu() {
   }
 }
 
+async function injectScriptFromMenu(script) {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    await dialog.showMessageBox({
+      type: "warning",
+      message: "Argos window is not open",
+      detail: "Open Argos Desktop before injecting a script."
+    });
+    return;
+  }
+  if (!isArgosUrl(mainWindow.webContents.getURL())) {
+    await dialog.showMessageBox(mainWindow, {
+      type: "warning",
+      message: "Not on Argos",
+      detail: "Load the Argos configurator before injecting a script."
+    });
+    return;
+  }
+
+  try {
+    await mainWindow.webContents.executeJavaScript(script.source, true);
+    await dialog.showMessageBox(mainWindow, {
+      type: "info",
+      message: `Injected ${script.label}`,
+      detail: script.detail || undefined
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`Could not inject ${script.id}:`, error);
+    await dialog.showMessageBox(mainWindow, {
+      type: "error",
+      message: `Could not inject ${script.label}`,
+      detail: message
+    });
+  }
+}
+
+function injectMenuTemplate() {
+  if (injectScripts.length === 0) {
+    return {
+      label: "Inject",
+      submenu: [{ label: "No scripts available", enabled: false }]
+    };
+  }
+  return {
+    label: "Inject",
+    submenu: injectScripts.map((script) => ({
+      label: script.label,
+      click: () => void injectScriptFromMenu(script)
+    }))
+  };
+}
+
 function installMenu() {
   const template = [
     ...(process.platform === "darwin"
@@ -282,6 +337,7 @@ function installMenu() {
         { role: process.platform === "darwin" ? "close" : "quit" }
       ]
     },
+    injectMenuTemplate(),
     {
       label: "View",
       submenu: [
@@ -316,6 +372,7 @@ if (hasSingleInstanceLock) {
 
   app.whenReady().then(async () => {
     auditScript = await readFile(AUDIT_SCRIPT_PATH, "utf8");
+    injectScripts = await loadInjectMenuScripts();
     historyStore = new HistoryStore(path.join(app.getPath("userData"), "audit"));
     await historyStore.init();
     registerIpc();

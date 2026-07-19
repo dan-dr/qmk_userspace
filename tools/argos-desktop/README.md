@@ -18,6 +18,20 @@ requests and never blocks interactive keyboard changes. New content is saved as:
 
 Open history from the in-app **History** pill or `Cmd+Shift+H`. Any snapshot can be inspected and exported without connecting the keyboard.
 
+## Inject menu
+
+The macOS/app menu **Inject** runs optional page scripts against the live Argos tab (not bundled into Argos itself). Use these after the configurator has loaded.
+
+| Menu item | What it does |
+| --- | --- |
+| Combo Chord Capture | Lets combo click-capture accept mod+key chords (e.g. Shift+F). Escape cancels. Survives until reload. |
+
+### Adding another inject script
+
+1. Add a self-contained browser script under `src/injected/menu/` (IIFE that can run via `executeJavaScript`).
+2. Register it in `src/injected/menu/manifest.mjs` with `id`, `label`, `file`, and optional `detail`.
+3. Restart Argos Desktop — the new item appears under **Inject**.
+
 ## Run
 
 ```nu
