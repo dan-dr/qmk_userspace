@@ -1,11 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
+import { readFile } from "node:fs/promises";
 
 const require = createRequire(import.meta.url);
 const { installArgosAudit } = require("../src/injected/argos-audit.cjs");
-const { installArgosStateHook } = require("../src/injected/argos-state-hook.cjs");
+const { installArgosStateHook } = require("../src/preload/argos-preload.cjs");
 const protocol = installArgosAudit({});
+
+test("keeps the sandboxed Electron preload self-contained", async () => {
+  const source = await readFile(new URL("../src/preload/argos-preload.cjs", import.meta.url), "utf8");
+
+  assert.doesNotMatch(source, /require\(["']\.\.\//);
+});
 
 function configFixture(overrides = {}) {
   return {
@@ -52,6 +59,10 @@ test("recognizes every current Argos write command", () => {
   assert.equal(protocol.isMutation(new Uint8Array([0x90, 0x14])), false);
   assert.equal(protocol.isMutation(new Uint8Array([0x90, 0x15])), true);
   assert.equal(protocol.describeCommand(new Uint8Array([0x90, 0x15])), "per-key RGB change");
+  assert.equal(protocol.isMutation(new Uint8Array([0x90, 0x18])), true);
+  assert.equal(protocol.describeCommand(new Uint8Array([0x90, 0x18])), "pointer-axis inversion change");
+  assert.equal(protocol.isMutation(new Uint8Array([0x90, 0x19])), true);
+  assert.equal(protocol.describeCommand(new Uint8Array([0x90, 0x19])), "drag-scroll DPI change");
   assert.equal(protocol.isMutation(new Uint8Array([0x05])), true);
   assert.equal(protocol.describeCommand(new Uint8Array([0x05])), "keymap change");
 });
@@ -106,7 +117,11 @@ test("reuses an authorized keyboard before opening the native chooser", async ()
 
 test("falls back to the native chooser when no supported keyboard is authorized", async () => {
   const hid = { getDevices: async () => [] };
-  const selected = { vendorId: 0xa8f8, productId: 0x1833 };
+  const selected = {
+    vendorId: 0xa8f8,
+    productId: 0x1833,
+    collections: [{ usagePage: 65377, usage: 98 }]
+  };
   const options = { filters: [{ usagePage: 65377, usage: 98 }] };
   const result = await protocol.requestAuthorizedDevice(hid, async (received) => {
     assert.equal(received, options);

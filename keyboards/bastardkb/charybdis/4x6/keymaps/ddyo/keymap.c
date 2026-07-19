@@ -18,6 +18,7 @@
 #include "analog.h"
 #include "argos.h"
 #include "keypeek_layer_notify.h"
+#include "via.h"
 
 #ifdef FSR_ENABLE
 #    include "timer.h"
@@ -228,6 +229,27 @@ bool shutdown_user(bool jump_to_bootloader) {
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
      return true;
+}
+
+enum ddyo_via_value_id {
+    id_ddyo_is_right_half = 0xDD,
+};
+
+/* Expose the physical right-half check through QMK/VIA's custom-value hook. */
+void via_custom_value_command_kb(uint8_t *data, uint8_t length) {
+    if (length < 4) {
+        if (length > 0) {
+            data[0] = id_unhandled;
+        }
+        return;
+    }
+
+    if (data[0] == id_custom_get_value && data[1] == id_custom_channel && data[2] == id_ddyo_is_right_half) {
+        data[3] = is_keyboard_left() ? 0 : 1;
+        return;
+    }
+
+    data[0] = id_unhandled;
 }
 
 /* Both Argos and KeyPeek want via_command_kb; share one handler. */

@@ -59,4 +59,7 @@ explicit Charybdis `qmk flash -kb ... -km ddyo` both route to the backup-first
 wrapper. Normal QMK commands and flashes for other keyboards pass through. The
 wrapper applies a scoped bypass only after the Argos export succeeds. It starts
 each compile without an input prompt and checks USB/HID state while waiting for
-the required half.
+the required half. Physical-half detection belongs to the `ddyo` keymap, not
+the Argos module. It uses VIA's custom-get-value request `08 00 DD` and returns
+`1` for right or `0` for left at response offset 3. `argosctl` uses that keymap
+response for the wrapper's `--require-right-half` backup and restore guards.

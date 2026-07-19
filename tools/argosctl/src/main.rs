@@ -2,7 +2,7 @@ mod config;
 mod protocol;
 
 use clap::{Parser, Subcommand};
-use config::ArgosConfig;
+use config::{ArgosConfig, Combo};
 use protocol::ArgosDevice;
 use std::collections::BTreeMap;
 use std::fs::{self, OpenOptions};
@@ -60,7 +60,7 @@ enum Command {
         #[arg(long)]
         wait: bool,
 
-        /// Require the connected keyboard to report the right half
+        /// Require the keymap to report the physical right half
         #[arg(long)]
         require_right_half: bool,
     },
@@ -79,7 +79,7 @@ enum Command {
         #[arg(long)]
         wait: bool,
 
-        /// Require the connected keyboard to report the right half
+        /// Require the keymap to report the physical right half
         #[arg(long)]
         require_right_half: bool,
 
@@ -218,8 +218,10 @@ fn backup(options: BackupOptions) -> Result<(), String> {
         combo_term: keyboard_info.combo_term,
         is_via_only: false,
         is_left_handed: keyboard_info.is_left_handed,
-        auto_mouse_layer_enabled: keyboard_info.auto_mouse_layer_enabled,
-        auto_precision_on_mouse_layer_enabled: keyboard_info.auto_precision_on_mouse_layer_enabled,
+        auto_mouse_layer_enabled: pointing.auto_mouse_layer_enabled,
+        auto_precision_on_mouse_layer_enabled: pointing.auto_precision_on_mouse_layer_enabled,
+        invert_x_axis_dragscroll: pointing.invert_x_axis_dragscroll,
+        invert_y_axis_dragscroll: pointing.invert_y_axis_dragscroll,
         rgb_matrix: BTreeMap::new(),
     };
 
@@ -261,12 +263,6 @@ fn restore(options: RestoreOptions) -> Result<(), String> {
         options.wait,
         options.require_right_half,
     )?;
-    if keyboard_info.argos_protocol_version < config.argos_protocol_version {
-        return Err(format!(
-            "keyboard Argos protocol {} is older than backup protocol {}",
-            keyboard_info.argos_protocol_version, config.argos_protocol_version
-        ));
-    }
     if keyboard_info.qmk_keycodes_version != config.qmk_keycodes_version {
         return Err(format!(
             "QMK keycode version mismatch: keyboard {:?}, backup {:?}",
@@ -303,10 +299,10 @@ fn restore(options: RestoreOptions) -> Result<(), String> {
 
     device.set_keymap(&config.keycodes, config.rows, config.cols)?;
     for (index, combo) in config.combos.iter().enumerate() {
-        device.set_combo(index as u8, combo, keyboard_info.argos_protocol_version)?;
+        device.set_combo(index as u8, combo)?;
     }
     for (index, tap_dance) in config.tap_dances.iter().enumerate() {
-        device.set_tap_dance(index as u8, tap_dance, keyboard_info.argos_protocol_version)?;
+        device.set_tap_dance(index as u8, tap_dance)?;
     }
     device.set_theme_id(config.theme_id)?;
     device.set_welcome_message_displayed(config.has_displayed_welcome_message)?;
@@ -363,7 +359,7 @@ fn verify_restore(device: &ArgosDevice, expected: &ArgosConfig) -> Result<(), St
         return Err("keymap verification failed after restore".to_owned());
     }
     let actual_combos = device.combos(expected.combos.len() as u8, expected.keys_per_combo)?;
-    if actual_combos != expected.combos {
+    if !same_combo_assignments(&actual_combos, &expected.combos) {
         return Err("combo verification failed after restore".to_owned());
     }
     let actual_tap_dances = device.tap_dances(expected.tap_dances.len() as u8)?;
@@ -383,6 +379,15 @@ fn verify_restore(device: &ArgosDevice, expected: &ArgosConfig) -> Result<(), St
     Ok(())
 }
 
+fn same_combo_assignments(actual: &[Combo], expected: &[Combo]) -> bool {
+    actual.len() == expected.len()
+        && actual.iter().zip(expected).all(|(actual, expected)| {
+            actual.output == expected.output
+                && actual.input == expected.input
+                && actual.custom_term == expected.custom_term
+        })
+}
+
 fn open_device(
     vid: u16,
     pid: u16,
@@ -393,15 +398,8 @@ fn open_device(
     loop {
         let attempt = ArgosDevice::open(vid, pid).and_then(|device| {
             let info = device.keyboard_info()?;
-            if require_right_half {
-                let controller_is_left = if info.argos_protocol_version >= 4 {
-                    device.controller_is_left()?
-                } else {
-                    info.is_left_handed
-                };
-                if controller_is_left {
-                    return Err("connected Argos device is the left half; connect the right/trackball half over normal USB".to_owned());
-                }
+            if require_right_half && !device.physical_half_is_right()? {
+                return Err("connected keyboard is the left half; connect the right/trackball half over normal USB".to_owned());
             }
             Ok((device, info))
         });
@@ -505,5 +503,23 @@ mod tests {
             make_layer_names(Vec::new(), 5).unwrap(),
             ["base", "lower", "raise", "pointer", "layer 4"]
         );
+    }
+
+    #[test]
+    fn combo_verification_ignores_read_only_enabled_state() {
+        let actual = [Combo {
+            enabled: true,
+            output: 42,
+            input: vec![4, 5, 0, 0],
+            custom_term: 0,
+        }];
+        let expected = [Combo {
+            enabled: false,
+            output: 42,
+            input: vec![4, 5, 0, 0],
+            custom_term: 0,
+        }];
+
+        assert!(same_combo_assignments(&actual, &expected));
     }
 }

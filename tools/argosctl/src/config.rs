@@ -13,8 +13,6 @@ pub struct KeyboardInfo {
     pub tapping_term: u16,
     pub combo_term: u16,
     pub is_left_handed: bool,
-    pub auto_mouse_layer_enabled: bool,
-    pub auto_precision_on_mouse_layer_enabled: bool,
 }
 
 impl KeyboardInfo {
@@ -38,10 +36,6 @@ impl KeyboardInfo {
             tapping_term: u16::from_be_bytes([data[10], data[11]]),
             combo_term: u16::from_be_bytes([data[12], data[13]]),
             is_left_handed: data[14] == 1,
-            auto_mouse_layer_enabled: argos_protocol_version >= 4
-                && data.get(15).copied() == Some(1),
-            auto_precision_on_mouse_layer_enabled: argos_protocol_version >= 4
-                && data.get(16).copied() == Some(1),
         })
     }
 }
@@ -89,8 +83,14 @@ pub struct ArgosConfig {
     #[serde(rename = "isVIAOnly")]
     pub is_via_only: bool,
     pub is_left_handed: bool,
+    #[serde(default)]
     pub auto_mouse_layer_enabled: bool,
+    #[serde(default)]
     pub auto_precision_on_mouse_layer_enabled: bool,
+    #[serde(default)]
+    pub invert_x_axis_dragscroll: bool,
+    #[serde(default)]
+    pub invert_y_axis_dragscroll: bool,
     pub rgb_matrix: BTreeMap<String, RgbMatrixEntry>,
 }
 
@@ -179,6 +179,10 @@ pub struct PointingDeviceInfo {
     pub sniping_dpi_config_step: u16,
     pub default_dpi_max_steps: u8,
     pub sniping_dpi_max_steps: u8,
+    pub auto_mouse_layer_enabled: bool,
+    pub auto_precision_on_mouse_layer_enabled: bool,
+    pub invert_x_axis_dragscroll: bool,
+    pub invert_y_axis_dragscroll: bool,
 }
 
 impl PointingDeviceInfo {
@@ -199,6 +203,10 @@ impl PointingDeviceInfo {
             sniping_dpi_config_step: u16::from_le_bytes([data[11], data[12]]),
             default_dpi_max_steps: data[13],
             sniping_dpi_max_steps: data[14],
+            auto_mouse_layer_enabled: data.get(15).copied() == Some(1),
+            auto_precision_on_mouse_layer_enabled: data.get(16).copied() == Some(1),
+            invert_x_axis_dragscroll: data.get(17).copied() == Some(1),
+            invert_y_axis_dragscroll: data.get(18).copied() == Some(1),
         })
     }
 }
@@ -217,8 +225,6 @@ mod tests {
         assert_eq!(info.tapping_term, 175);
         assert_eq!(info.combo_term, 42);
         assert!(info.is_left_handed);
-        assert!(info.auto_mouse_layer_enabled);
-        assert!(!info.auto_precision_on_mouse_layer_enabled);
     }
 
     #[test]
@@ -238,6 +244,20 @@ mod tests {
     }
 
     #[test]
+    fn preserves_reported_disabled_combo_state() {
+        let response = [0x90, 0x02, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        assert_eq!(
+            Combo::parse(&response, 4).unwrap(),
+            Combo {
+                enabled: false,
+                output: 0,
+                input: vec![0, 0, 0, 0],
+                custom_term: 0,
+            }
+        );
+    }
+
+    #[test]
     fn parses_tap_dance() {
         let response = [0x90, 0x07, 2, 4, 0, 5, 0, 6, 0, 7, 0, 175, 0];
         assert_eq!(
@@ -250,5 +270,20 @@ mod tests {
                 custom_tapping_term: 175,
             }
         );
+    }
+
+    #[test]
+    fn parses_protocol_four_pointer_flags_from_pointing_info() {
+        let response = [
+            0x90, 0x0c, 2, 0x58, 0x02, 0x90, 0x01, 0xc8, 0x00, 0xc8, 0x00, 0xc8, 0x00, 0x64, 0x00,
+            16, 4, 1, 0, 1, 0,
+        ];
+        let info = PointingDeviceInfo::parse(&response).unwrap();
+
+        assert_eq!(info.default_dpi, 600);
+        assert!(info.auto_mouse_layer_enabled);
+        assert!(!info.auto_precision_on_mouse_layer_enabled);
+        assert!(info.invert_x_axis_dragscroll);
+        assert!(!info.invert_y_axis_dragscroll);
     }
 }

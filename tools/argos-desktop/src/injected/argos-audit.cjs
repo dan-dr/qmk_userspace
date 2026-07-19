@@ -32,7 +32,9 @@
     0x13,
     0x15,
     0x16,
-    0x17
+    0x17,
+    0x18,
+    0x19
   ]);
   const VIA_MUTATIONS = new Set([0x05, 0x07, 0x09, 0x13]);
 
@@ -81,7 +83,9 @@
         0x13: "tap dance assignment",
         0x15: "per-key RGB change",
         0x16: "auto-mouse change",
-        0x17: "auto-precision change"
+        0x17: "auto-precision change",
+        0x18: "pointer-axis inversion change",
+        0x19: "drag-scroll DPI change"
       };
       return names[request[1]] ?? `Argos command 0x${request[1].toString(16).padStart(2, "0")}`;
     }
@@ -216,7 +220,7 @@
   function installAutoConnect() {
     const hid = root.navigator.hid;
     const originalRequestDevice = hid.requestDevice.bind(hid);
-    const attemptedDevices = new Set();
+    const attemptedDevices = new WeakSet();
     let scheduled = false;
 
     Object.defineProperty(hid, "requestDevice", {
@@ -225,14 +229,14 @@
       value: (options) => requestAuthorizedDevice(hid, originalRequestDevice, options)
     });
 
-    const deviceKey = (device) => `${device.vendorId}:${device.productId}`;
     const maybeConnect = async () => {
       scheduled = false;
       const device = selectAuthorizedDevice(await hid.getDevices());
-      if (!device || attemptedDevices.has(deviceKey(device))) return;
+      if (!device) return;
+      if (attemptedDevices.has(device)) return;
       const connectButton = findConnectButton(root.document);
       if (!connectButton) return;
-      attemptedDevices.add(deviceKey(device));
+      attemptedDevices.add(device);
       connectButton.click();
     };
     const scheduleConnect = () => {
@@ -248,11 +252,11 @@
     };
 
     hid.addEventListener("connect", (event) => {
-      attemptedDevices.delete(deviceKey(event.device));
+      attemptedDevices.delete(event.device);
       scheduleConnect();
     });
     hid.addEventListener("disconnect", (event) => {
-      attemptedDevices.delete(deviceKey(event.device));
+      attemptedDevices.delete(event.device);
     });
     if (typeof root.MutationObserver === "function" && root.document?.body) {
       const observer = new root.MutationObserver(scheduleConnect);

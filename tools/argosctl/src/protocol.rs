@@ -7,6 +7,9 @@ const RAW_HID_REPORT_SIZE: usize = 32;
 const VIA_USAGE_PAGE: u16 = 0xff60;
 const VIA_USAGE: u16 = 0x61;
 const ARGOS_PREFIX: u8 = 0x90;
+const ARGOS_SET_TAP_DANCE: u8 = 0x08;
+const ARGOS_SET_COMBO: u8 = 0x0e;
+const DDYO_GET_IS_RIGHT_HALF: [u8; 3] = [0x08, 0x00, 0xDD];
 const RESPONSE_TIMEOUT: Duration = Duration::from_secs(3);
 
 pub struct ArgosDevice {
@@ -29,14 +32,14 @@ impl ArgosDevice {
 
         match paths.as_slice() {
             [] => Err(format!(
-                "no Argos Raw HID device found for {vid:04X}:{pid:04X}; connect the normal USB half and close Argos if it has the device open"
+                "no Argos Raw HID device found for {vid:04X}:{pid:04X}; connect the keyboard over USB and close Argos if it has the device open"
             )),
             [path] => api
                 .open_path(path)
                 .map(|device| Self { device })
                 .map_err(|error| format!("could not open Argos Raw HID device: {error}")),
             _ => Err(format!(
-                "found {} Argos Raw HID devices for {vid:04X}:{pid:04X}; connect only the half being backed up",
+                "found {} Argos Raw HID devices for {vid:04X}:{pid:04X}; connect only one matching keyboard",
                 paths.len()
             )),
         }
@@ -126,13 +129,13 @@ impl ArgosDevice {
         KeyboardInfo::parse(&self.argos_command(0x01, &[])?)
     }
 
-    pub fn controller_is_left(&self) -> Result<bool, String> {
-        let response = self.argos_command(0x16, &[])?;
-        match response[2] {
-            0 => Ok(false),
-            1 => Ok(true),
-            value => Err(format!("keyboard reported invalid controller side {value}")),
-        }
+    pub fn physical_half_is_right(&self) -> Result<bool, String> {
+        let response = self
+            .command(&DDYO_GET_IS_RIGHT_HALF, &DDYO_GET_IS_RIGHT_HALF)
+            .map_err(|error| {
+                format!("could not read physical right-half state from ddyo keymap: {error}")
+            })?;
+        parse_is_right_half(response[DDYO_GET_IS_RIGHT_HALF.len()])
     }
 
     pub fn combos(&self, count: u8, keys_per_combo: u8) -> Result<Vec<Combo>, String> {
@@ -183,54 +186,14 @@ impl ArgosDevice {
         self.argos_command(0x0d, &dpi.to_le_bytes()).map(|_| ())
     }
 
-    pub fn set_combo(&self, index: u8, combo: &Combo, protocol_version: u16) -> Result<(), String> {
-        if protocol_version < 3 {
-            let is_empty = combo.output == 0 && combo.input.iter().all(|keycode| *keycode == 0);
-            return if is_empty {
-                Ok(())
-            } else {
-                Err(format!(
-                    "firmware Argos protocol {protocol_version} cannot bulk-restore combo {index}; flash firmware with protocol 3 support first"
-                ))
-            };
-        }
-        if combo.custom_term != 0 {
-            return Err(format!(
-                "combo {index} has unsupported custom term {}",
-                combo.custom_term
-            ));
-        }
-        let mut data = Vec::with_capacity(4 + combo.input.len() * 2);
-        data.extend_from_slice(&[index, u8::from(combo.enabled)]);
-        data.extend_from_slice(&combo.output.to_le_bytes());
-        for keycode in &combo.input {
-            data.extend_from_slice(&keycode.to_le_bytes());
-        }
-        self.argos_command(0x14, &data).map(|_| ())
+    pub fn set_combo(&self, index: u8, combo: &Combo) -> Result<(), String> {
+        let data = set_combo_payload(index, combo)?;
+        self.argos_command(ARGOS_SET_COMBO, &data).map(|_| ())
     }
 
-    pub fn set_tap_dance(
-        &self,
-        index: u8,
-        tap_dance: &TapDance,
-        protocol_version: u16,
-    ) -> Result<(), String> {
-        let mut data = Vec::with_capacity(11);
-        data.push(index);
-        data.extend_from_slice(&tap_dance.on_tap.to_le_bytes());
-        data.extend_from_slice(&tap_dance.on_hold.to_le_bytes());
-        data.extend_from_slice(&tap_dance.on_double_tap.to_le_bytes());
-        data.extend_from_slice(&tap_dance.on_tap_hold.to_le_bytes());
-        if protocol_version >= 3 {
-            data.extend_from_slice(&tap_dance.custom_tapping_term.to_le_bytes());
-            self.argos_command(0x15, &data).map(|_| ())
-        } else if tap_dance.custom_tapping_term == 0 {
-            self.argos_command(0x08, &data).map(|_| ())
-        } else {
-            Err(format!(
-                "firmware Argos protocol {protocol_version} cannot restore custom tapping term for tap dance {index}"
-            ))
-        }
+    pub fn set_tap_dance(&self, index: u8, tap_dance: &TapDance) -> Result<(), String> {
+        let data = set_tap_dance_payload(index, tap_dance);
+        self.argos_command(ARGOS_SET_TAP_DANCE, &data).map(|_| ())
     }
 
     fn via_command(&self, command: u8, data: &[u8]) -> Result<[u8; 32], String> {
@@ -288,10 +251,116 @@ impl ArgosDevice {
     }
 }
 
+fn set_combo_payload(index: u8, combo: &Combo) -> Result<Vec<u8>, String> {
+    if combo.custom_term != 0 {
+        return Err(format!(
+            "combo {index} has unsupported custom term {}",
+            combo.custom_term
+        ));
+    }
+
+    let mut data = Vec::with_capacity(3 + combo.input.len() * 2);
+    data.push(index);
+    data.extend_from_slice(&combo.output.to_be_bytes());
+    for keycode in &combo.input {
+        data.extend_from_slice(&keycode.to_be_bytes());
+    }
+    Ok(data)
+}
+
+fn set_tap_dance_payload(index: u8, tap_dance: &TapDance) -> Vec<u8> {
+    let mut data = Vec::with_capacity(11);
+    data.push(index);
+    data.extend_from_slice(&tap_dance.on_tap.to_be_bytes());
+    data.extend_from_slice(&tap_dance.on_hold.to_be_bytes());
+    data.extend_from_slice(&tap_dance.on_double_tap.to_be_bytes());
+    data.extend_from_slice(&tap_dance.on_tap_hold.to_be_bytes());
+    data.extend_from_slice(&tap_dance.custom_tapping_term.to_be_bytes());
+    data
+}
+
+fn parse_is_right_half(value: u8) -> Result<bool, String> {
+    match value {
+        0 => Ok(false),
+        1 => Ok(true),
+        _ => Err(format!(
+            "keyboard reported invalid physical right-half state {value}"
+        )),
+    }
+}
+
 fn hex_bytes(bytes: &[u8]) -> String {
     bytes
         .iter()
         .map(|byte| format!("0x{byte:02X}"))
         .collect::<Vec<_>>()
         .join(" ")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn encodes_combo_like_the_live_website() {
+        let combo = Combo {
+            enabled: true,
+            output: 0x1234,
+            input: vec![0x0004, 0x5678, 0, 0],
+            custom_term: 0,
+        };
+
+        assert_eq!(
+            set_combo_payload(3, &combo).unwrap(),
+            [3, 0x12, 0x34, 0x00, 0x04, 0x56, 0x78, 0, 0, 0, 0]
+        );
+    }
+
+    #[test]
+    fn ignores_read_only_combo_enabled_state_like_the_live_website() {
+        let disabled = Combo {
+            enabled: false,
+            output: 0x1234,
+            input: vec![0x0004, 0x5678, 0, 0],
+            custom_term: 0,
+        };
+        assert_eq!(
+            set_combo_payload(3, &disabled).unwrap(),
+            [3, 0x12, 0x34, 0x00, 0x04, 0x56, 0x78, 0, 0, 0, 0]
+        );
+    }
+
+    #[test]
+    fn rejects_unsupported_combo_custom_term() {
+        let combo = Combo {
+            enabled: true,
+            output: 0,
+            input: vec![0, 0, 0, 0],
+            custom_term: 42,
+        };
+        assert!(set_combo_payload(0, &combo).is_err());
+    }
+
+    #[test]
+    fn encodes_tap_dance_like_the_live_website() {
+        let tap_dance = TapDance {
+            on_tap: 0x1234,
+            on_hold: 0x5678,
+            on_double_tap: 0x9abc,
+            on_tap_hold: 0xdef0,
+            custom_tapping_term: 0x00af,
+        };
+
+        assert_eq!(
+            set_tap_dance_payload(2, &tap_dance),
+            [2, 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0, 0x00, 0xaf]
+        );
+    }
+
+    #[test]
+    fn parses_keymap_right_half_response() {
+        assert!(!parse_is_right_half(0).unwrap());
+        assert!(parse_is_right_half(1).unwrap());
+        assert!(parse_is_right_half(2).is_err());
+    }
 }
