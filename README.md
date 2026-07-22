@@ -15,12 +15,13 @@ The `ddyo` keymap adapts an older Elite-C Charybdis shield to a Sea-Picro/Splink
 - Handedness on GP27 and USB VBUS detection on GP19.
 - The optional GP26 FSR has configurable thresholds, scan timing, and console diagnostics.
 - Elite-C pin names map to the RP2040 controller so the old shield wiring still works.
+- Auto Mouse, precision, drag-scroll, and DPI state come from BastardKB's pointing-device module.
 
 ## Modules
 
 Pinned as Git submodules:
 
-- [`bastardkb/argos`](https://github.com/dan-dr/qmk_modules/tree/main/argos), using Dan's fork until its changes are upstream
+- [`qmk_userspace_private`](https://github.com/dan-dr/qmk_userspace_private/tree/ddyo), containing BastardKB's Argos and pointing-device modules
 - [`srwi/keypeek_layer_notify`](https://github.com/srwi/qmk-modules/tree/master/keypeek_layer_notify)
 
 ## Flash

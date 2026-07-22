@@ -1,3 +1,7 @@
 {
-  "modules": ["bastardkb/argos", "srwi/keypeek_layer_notify"]
+  "modules": [
+    "qmk_userspace_private/modules/bastardkb/bk_pointing_device",
+    "qmk_userspace_private/modules/bastardkb/argos",
+    "srwi/keypeek_layer_notify"
+  ]
 }

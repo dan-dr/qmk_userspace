@@ -18,15 +18,12 @@
 
 #ifdef VIA_ENABLE
 /* VIA configuration. */
-#define DYNAMIC_KEYMAP_LAYER_COUNT 4
+#define DYNAMIC_KEYMAP_LAYER_COUNT 5
 #endif // VIA_ENABLE
 
 /* Let the keymap share via_command_kb between Argos and KeyPeek. */
 #define KEYPEEK_DISABLE_RAW_HID_HANDLER
 #define ARGOS_DISABLE_VIA_COMMAND_KB
-
-/* Disable unused features. */
-#define NO_ACTION_ONESHOT
 
 /* Tap-hold behavior. */
 #define SPECULATIVE_HOLD
@@ -70,8 +67,11 @@
 #undef POINTING_DEVICE_CS_PIN
 #define POINTING_DEVICE_CS_PIN GP21
 
-/* Automatically enable the pointer layer when moving the trackball. */
-#define POINTING_DEVICE_AUTO_MOUSE_ENABLE
+/* The pointing-device module owns Auto Mouse state and persistence. */
+#ifdef AUTO_MOUSE_DEFAULT_LAYER
+#    undef AUTO_MOUSE_DEFAULT_LAYER
+#endif
+#define AUTO_MOUSE_DEFAULT_LAYER 3
 #define AUTO_MOUSE_TIME 1700
 #define AUTO_MOUSE_THRESHOLD 10
 

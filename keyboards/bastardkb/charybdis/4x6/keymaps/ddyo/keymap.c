@@ -29,22 +29,15 @@ enum charybdis_keymap_layers {
     LAYER_LOWER,
     LAYER_RAISE,
     LAYER_POINTER,
+    LAYER_SYMBOL,
 };
 
-/** \brief Automatically enable sniping-mode on the pointer layer. */
-// #define CHARYBDIS_AUTO_SNIPING_ON_LAYER LAYER_POINTER
-
 #ifdef POINTING_DEVICE_AUTO_MOUSE_ENABLE
-void pointing_device_init_user(void) {
-    set_auto_mouse_layer(LAYER_POINTER);
-    set_auto_mouse_enable(true);
-}
-
 bool is_mouse_record_user(uint16_t keycode, keyrecord_t *record) {
     (void)record;
     // Track physical pointer-layer actions. Tracking Tap Dance's synthesized
     // drag-scroll hold action can leave Auto Mouse's key counter stuck.
-    return keycode == TD(2) || keycode == SNIPING_MODE;
+    return keycode == TD(2) || keycode == SNIPING;
 }
 #endif // POINTING_DEVICE_AUTO_MOUSE_ENABLE
 
@@ -190,23 +183,28 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                                            XXXXXXX, MS_BTN2,    MS_BTN2
   //                            ╰───────────────────────────╯ ╰──────────────────╯
   ),
+
+  [LAYER_SYMBOL] = LAYOUT(
+  // ╭──────────────────────────────────────────────────────╮ ╭──────────────────────────────────────────────────────╮
+      _______, _______, _______, _______, _______, _______,   _______, _______, _______, _______, _______, _______,
+  // ├──────────────────────────────────────────────────────┤ ├──────────────────────────────────────────────────────┤
+      _______,  KC_GRV,   KC_LT,   KC_GT, KC_MINS, KC_PIPE,    KC_CIRC, KC_LCBR, KC_RCBR,  KC_DLR, KC_RGHT, _______,
+  // ├──────────────────────────────────────────────────────┤ ├──────────────────────────────────────────────────────┤
+      _______, KC_EXLM, KC_ASTR, KC_SLSH,  KC_EQL, KC_AMPR,    KC_HASH, KC_LPRN, KC_RPRN, KC_SCLN, KC_DQUO, _______,
+  // ├──────────────────────────────────────────────────────┤ ├──────────────────────────────────────────────────────┤
+      _______, KC_TILD, KC_PLUS, KC_LBRC, KC_RBRC, KC_PERC,      KC_AT, KC_COLN, KC_COMM,  KC_DOT, KC_QUOT, _______,
+  // ╰──────────────────────────────────────────────────────┤ ├──────────────────────────────────────────────────────╯
+                                  _______, _______, _______,    _______, _______,
+                                           _______, _______,    _______
+  ),
 };
 // clang-format on
 
-#ifdef FSR_ENABLE
 void matrix_scan_user(void) {
+#ifdef FSR_ENABLE
     fsr_scan();
-}
 #endif // FSR_ENABLE
-
-#ifdef POINTING_DEVICE_ENABLE
-#    ifdef CHARYBDIS_AUTO_SNIPING_ON_LAYER
-layer_state_t layer_state_set_user(layer_state_t state) {
-    charybdis_set_pointer_sniping_enabled(layer_state_cmp(state, CHARYBDIS_AUTO_SNIPING_ON_LAYER));
-    return state;
 }
-#    endif // CHARYBDIS_AUTO_SNIPING_ON_LAYER
-#endif     // POINTING_DEVICE_ENABLE
 
 #ifdef RGB_MATRIX_ENABLE
 // Forward-declare this helper function since it is defined in rgb_matrix.c.
@@ -225,10 +223,6 @@ bool shutdown_user(bool jump_to_bootloader) {
     rgb_matrix_update_pwm_buffers();
 #endif // RGB_MATRIX_ENABLE
     return true;
-}
-
-bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-     return true;
 }
 
 enum ddyo_via_value_id {
