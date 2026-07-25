@@ -1,7 +1,7 @@
 [submodule "modules/srwi"]
 	path = modules/srwi
 	url = https://github.com/srwi/qmk-modules.git
-[submodule "modules/qmk_userspace_private"]
-	path = modules/qmk_userspace_private
-	url = https://github.com/dan-dr/qmk_userspace_private.git
-	branch = ddyo
+[submodule "modules/qmk_modules"]
+	path = modules/qmk_modules
+	url = https://github.com/dan-dr/qmk_modules.git
+	branch = main
