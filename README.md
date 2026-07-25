@@ -21,7 +21,7 @@ The `ddyo` keymap adapts an older Elite-C Charybdis shield to a Sea-Picro/Splink
 
 Pinned as Git submodules:
 
-- [`qmk_modules`](https://github.com/dan-dr/qmk_modules), containing BastardKB's Argos and pointing-device modules plus Dan's fixes
+- [`qmk_modules`](https://github.com/dan-dr/qmk_modules), containing BastardKB's Argos and pointing-device modules plus Dan's external VIA dispatch guard
 - [`srwi/keypeek_layer_notify`](https://github.com/srwi/qmk-modules/tree/master/keypeek_layer_notify)
 
 ## Flash
