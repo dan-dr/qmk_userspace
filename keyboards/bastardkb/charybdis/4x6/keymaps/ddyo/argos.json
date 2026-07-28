@@ -1,6 +1,6 @@
 {
   "viaProtocolVersion": 12,
-  "argosProtocolVersion": 2,
+  "argosProtocolVersion": 4,
   "qmkKeycodesVersion": [
     0,
     0,
@@ -16,7 +16,7 @@
   "rgbHue": 0,
   "rgbSat": 0,
   "pointingDeviceType": 2,
-  "defaultDPI": 600,
+  "defaultDPI": 400,
   "minimumDefaultDpi": 400,
   "defaultDPIConfigStep": 200,
   "snipingDPI": 200,
@@ -55,7 +55,7 @@
       224,
       227,
       17452,
-      20737,
+      21025,
       45,
       39,
       38,
@@ -293,9 +293,9 @@
       1,
       1,
       1,
-      20992,
-      20997,
-      20998,
+      1,
+      1,
+      1,
       1,
       1,
       0,
@@ -322,9 +322,9 @@
       30656,
       30657,
       2077,
-      1,
-      1,
-      1,
+      21062,
+      21061,
+      21056,
       1,
       1,
       1,
@@ -365,7 +365,7 @@
       224,
       227,
       17452,
-      20737,
+      21025,
       45,
       39,
       38,
@@ -427,7 +427,7 @@
       224,
       227,
       17452,
-      20737,
+      21025,
       45,
       39,
       38,
@@ -484,7 +484,6 @@
       1,
       1,
       1,
-      0,
       1,
       1,
       1,
@@ -514,23 +513,24 @@
       1,
       1,
       1,
-      0,
       1,
-      0,
       1,
-      0,
+      1,
+      1,
+      1,
+      1,
       1
     ]
   ],
   "layerNames": [
     "base",
-    "num",
-    "symbol",
+    "lower",
+    "raise",
     "pointer",
-    "nav",
-    "anymak",
-    "hebrew",
-    "spare"
+    "layer 4",
+    "layer 5",
+    "layer 6",
+    "layer 7"
   ],
   "combos": [
     {
@@ -556,7 +556,7 @@
       "customTerm": 0
     },
     {
-      "enabled": false,
+      "enabled": true,
       "output": 0,
       "input": [
         0,
@@ -567,7 +567,7 @@
       "customTerm": 0
     },
     {
-      "enabled": false,
+      "enabled": true,
       "output": 0,
       "input": [
         0,
@@ -578,7 +578,7 @@
       "customTerm": 0
     },
     {
-      "enabled": false,
+      "enabled": true,
       "output": 0,
       "input": [
         0,
@@ -589,7 +589,7 @@
       "customTerm": 0
     },
     {
-      "enabled": false,
+      "enabled": true,
       "output": 0,
       "input": [
         0,
@@ -600,7 +600,7 @@
       "customTerm": 0
     },
     {
-      "enabled": false,
+      "enabled": true,
       "output": 0,
       "input": [
         0,
@@ -611,7 +611,7 @@
       "customTerm": 0
     },
     {
-      "enabled": false,
+      "enabled": true,
       "output": 0,
       "input": [
         0,
@@ -622,7 +622,7 @@
       "customTerm": 0
     },
     {
-      "enabled": false,
+      "enabled": true,
       "output": 0,
       "input": [
         0,
@@ -633,7 +633,7 @@
       "customTerm": 0
     },
     {
-      "enabled": false,
+      "enabled": true,
       "output": 0,
       "input": [
         0,
@@ -644,7 +644,7 @@
       "customTerm": 0
     },
     {
-      "enabled": false,
+      "enabled": true,
       "output": 0,
       "input": [
         0,
@@ -655,7 +655,7 @@
       "customTerm": 0
     },
     {
-      "enabled": false,
+      "enabled": true,
       "output": 0,
       "input": [
         0,
@@ -666,7 +666,7 @@
       "customTerm": 0
     },
     {
-      "enabled": false,
+      "enabled": true,
       "output": 0,
       "input": [
         0,
@@ -677,7 +677,7 @@
       "customTerm": 0
     },
     {
-      "enabled": false,
+      "enabled": true,
       "output": 0,
       "input": [
         0,
@@ -688,7 +688,7 @@
       "customTerm": 0
     },
     {
-      "enabled": false,
+      "enabled": true,
       "output": 0,
       "input": [
         0,
@@ -699,7 +699,7 @@
       "customTerm": 0
     },
     {
-      "enabled": false,
+      "enabled": true,
       "output": 0,
       "input": [
         0,
@@ -712,10 +712,10 @@
   ],
   "tapDances": [
     {
-      "on_tap": 231,
+      "on_tap": 0,
       "on_hold": 0,
       "on_double_tap": 0,
-      "on_tap_hold": 230,
+      "on_tap_hold": 0,
       "custom_tapping_term": 0
     },
     {
@@ -726,16 +726,16 @@
       "custom_tapping_term": 0
     },
     {
-      "on_tap": 211,
-      "on_hold": 32262,
+      "on_tap": 0,
+      "on_hold": 0,
       "on_double_tap": 0,
-      "on_tap_hold": 231,
+      "on_tap_hold": 0,
       "custom_tapping_term": 0
     },
     {
-      "on_tap": 212,
+      "on_tap": 0,
       "on_hold": 0,
-      "on_double_tap": 213,
+      "on_double_tap": 0,
       "on_tap_hold": 0,
       "custom_tapping_term": 0
     },
@@ -1064,7 +1064,7 @@
   ],
   "rows": 10,
   "cols": 6,
-  "hasDisplayedWelcomeMessage": true,
+  "hasDisplayedWelcomeMessage": false,
   "tappingTerm": 200,
   "comboTerm": 50,
   "isVIAOnly": false,
