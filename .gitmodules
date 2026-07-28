@@ -1,7 +1,10 @@
 [submodule "modules/srwi"]
 	path = modules/srwi
 	url = https://github.com/srwi/qmk-modules.git
-[submodule "modules/qmk_modules"]
-	path = modules/qmk_modules
-	url = https://github.com/dan-dr/qmk_modules.git
+[submodule "modules/bastardkb"]
+	path = modules/bastardkb
+	url = https://github.com/dan-dr/bastardkb_qmk_modules.git
 	branch = main
+[submodule "modules/getreuer"]
+	path = modules/getreuer
+	url = https://github.com/getreuer/qmk-modules.git

@@ -16,9 +16,11 @@
  */
 #pragma once
 
+#include "layers.h"
+
 #ifdef VIA_ENABLE
-/* VIA configuration. */
-#define DYNAMIC_KEYMAP_LAYER_COUNT 5
+/* VIA configuration. Argos post_config.h raises this to 8. */
+#    define DYNAMIC_KEYMAP_LAYER_COUNT 8
 #endif // VIA_ENABLE
 
 /* Let the keymap share via_command_kb between Argos and KeyPeek. */
@@ -28,6 +30,15 @@
 /* Tap-hold behavior. */
 #define SPECULATIVE_HOLD
 #define FLOW_TAP_TERM 150
+
+/* Select Word: Mac hotkeys (⌘/⌥ word motion). */
+#define SELECT_WORD_OS_MAC
+
+/* Cyclotab: macOS app switcher + window cycle. */
+#define CYCLOTAB_KEYS LCMD(KC_TAB), LCMD(KC_GRAVE)
+
+/* Layer lock idle release. */
+#define LAYER_LOCK_IDLE_TIMEOUT 60000
 
 /* Charybdis-specific features. */
 
@@ -71,9 +82,9 @@
 #ifdef AUTO_MOUSE_DEFAULT_LAYER
 #    undef AUTO_MOUSE_DEFAULT_LAYER
 #endif
-#define AUTO_MOUSE_DEFAULT_LAYER 3
-#define AUTO_MOUSE_TIME 1700
-#define AUTO_MOUSE_THRESHOLD 10
+#define AUTO_MOUSE_DEFAULT_LAYER LAYER_POINTER
+#define AUTO_MOUSE_TIME 1400
+#define AUTO_MOUSE_THRESHOLD 5
 
 #undef USB_VBUS_PIN
 #define USB_VBUS_PIN GP19
@@ -89,19 +100,21 @@
 #undef ROTATIONAL_TRANSFORM_ANGLE
 #define ROTATIONAL_TRANSFORM_ANGLE -85
 
+/* FSR pedal → momentary FSR_LAYER (see modules/ddyo/fsr_layer).
+ * Uncomment only when the sensor is wired — GP26 floats high without it and
+ * can stall boot. */
 // #define FSR_ENABLE
+#define FSR_LAYER LAYER_POINTER
 #define FSR_PIN GP26
 #define FSR_THRESHOLD 150
 #define FSR_RELEASE_THRESHOLD 80
 #define FSR_SCAN_INTERVAL_MS 20
-#define FSR_DEBUG_INTERVAL_MS 100
-#define FSR_DEBUG_ADC_MAX 4095
-#define FSR_DEBUG_BAR_MIN_RANGE 50
-#define FSR_DEBUG_BAR_STEP 50
-#define FSR_DEBUG_BAR_WIDTH 40
 
 #undef ADC_RESOLUTION
 #define ADC_RESOLUTION ADC_CFGR1_RES_12BIT
 
 #undef SPLIT_MAX_CONNECTION_ERRORS
 #define SPLIT_MAX_CONNECTION_ERRORS 0
+
+/* Hebrew prefix finalize: HE_FINALIZE arms, next כ/פ/צ within this window → ך/ף/ץ. */
+#define HE_FINALIZE_TIMEOUT 500

@@ -1,7 +1,9 @@
 {
   "modules": [
-    "qmk_modules/bk_pointing_device",
-    "qmk_modules/argos",
-    "srwi/keypeek_layer_notify"
+    "bastardkb/bk_pointing_device",
+    "bastardkb/argos",
+    "srwi/keypeek_layer_notify",
+    "getreuer/select_word",
+    "getreuer/cyclotab"
   ]
 }
