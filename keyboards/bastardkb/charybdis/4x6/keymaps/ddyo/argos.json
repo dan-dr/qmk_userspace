@@ -535,7 +535,7 @@
   "combos": [
     {
       "enabled": true,
-      "output": 32263,
+      "output": 0,
       "input": [
         209,
         211,
