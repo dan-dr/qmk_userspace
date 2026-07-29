@@ -2,6 +2,7 @@
   "modules": [
     "bastardkb/bk_pointing_device",
     "bastardkb/argos",
+    "ddyo/fsr_layer",
     "srwi/keypeek_layer_notify",
     "getreuer/select_word",
     "getreuer/cyclotab"

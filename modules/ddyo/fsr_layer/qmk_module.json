@@ -4,5 +4,15 @@
   "license": "GPL-2.0-or-later",
   "features": {
     "console": true
-  }
+  },
+  "keycodes": [
+    {
+      "key": "FSR_CAL_IDLE",
+      "aliases": ["FSRCIDL"]
+    },
+    {
+      "key": "FSR_CAL_TOUCH",
+      "aliases": ["FSRCTCH"]
+    }
+  ]
 }

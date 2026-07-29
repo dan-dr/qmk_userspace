@@ -82,8 +82,8 @@
 #ifdef AUTO_MOUSE_DEFAULT_LAYER
 #    undef AUTO_MOUSE_DEFAULT_LAYER
 #endif
-#define AUTO_MOUSE_DEFAULT_LAYER LAYER_POINTER
-#define AUTO_MOUSE_TIME 1400
+#define AUTO_MOUSE_DEFAULT_LAYER 3
+#define AUTO_MOUSE_TIME 1500
 #define AUTO_MOUSE_THRESHOLD 5
 
 #undef USB_VBUS_PIN
@@ -101,9 +101,10 @@
 #define ROTATIONAL_TRANSFORM_ANGLE -85
 
 /* FSR pedal → momentary FSR_LAYER (see modules/ddyo/fsr_layer).
- * Uncomment only when the sensor is wired — GP26 floats high without it and
+ * Disable when the sensor is unwired — GP26 floats high without it and
  * can stall boot. */
-// #define FSR_ENABLE
+#define FSR_ENABLE
+#define FSR_AUTO_CALIBRATE
 #define FSR_LAYER LAYER_POINTER
 #define FSR_PIN GP26
 #define FSR_THRESHOLD 150

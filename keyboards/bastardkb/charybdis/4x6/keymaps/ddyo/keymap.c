@@ -152,17 +152,17 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   ),
 
   /* 4: nav — SpaceFN (Getreuer-inspired)
-   *  · Ref CPg↑ CPg↓ · · | · · Home ↑ End Find
-   *  · Alt Ctl Sft Line · |Pg↑ Pg↓ ← ↓ → Bksp
+   * Idle Touch Ref CPg↑ CPg↓ · | · · Home ↑ End Find
+   * Dbug Alt Ctl Sft Line · |Pg↑ Pg↓ ← ↓ → Bksp
    *  · Gui Pg↑ Pg↓ ·  · |Undo W← W→ App · ·
    *  ·  ·  ·  ·  ·  ·    | ·  ·  · D(EN) A(Any) H(Heb)   ← mode switch (corner)
    *     www← CycloTab   | Lock ·
    */
   [LAYER_NAV] = LAYOUT(
   // ╭──────────────────────────────────────────────────────╮ ╭──────────────────────────────────────────────────────╮
-       _______, _______, G(KC_R), C(KC_PGUP), C(KC_PGDN), _______, _______, _______, KC_HOME,   KC_UP,  KC_END, G(KC_F),
+    FSR_CAL_IDLE, FSR_CAL_TOUCH, G(KC_R), C(KC_PGUP), C(KC_PGDN), _______, _______, _______, KC_HOME,   KC_UP,  KC_END, G(KC_F),
   // ├──────────────────────────────────────────────────────┤ ├──────────────────────────────────────────────────────┤
-       _______, KC_LALT, KC_LCTL, KC_LSFT, SELLINE, _______,    KC_PGUP, KC_PGDN, KC_LEFT, KC_DOWN, KC_RGHT, KC_BSPC,
+        DB_TOGG, KC_LALT, KC_LCTL, KC_LSFT, SELLINE, _______,    KC_PGUP, KC_PGDN, KC_LEFT, KC_DOWN, KC_RGHT, KC_BSPC,
   // ├──────────────────────────────────────────────────────┤ ├──────────────────────────────────────────────────────┤
        _______, KC_LGUI, KC_PGUP, KC_PGDN, _______, _______,    G(KC_Z), SELWBAK, SELWORD,  KC_APP, _______, _______,
   // ├──────────────────────────────────────────────────────┤ ├──────────────────────────────────────────────────────┤
