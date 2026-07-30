@@ -11,6 +11,7 @@ External QMK userspace for Dan's keyboards.
 
 The `ddyo` keymap adapts an older Elite-C Charybdis shield to a Sea-Picro/Splinky RP2040 controller:
 
+- When changing `keyboards/bastardkb/charybdis/4x6/keymaps/ddyo/keymap.c`, ask whether matching changes should also be made in the Argos keymap.
 - Custom left/right matrix maps use the bottom GP12-GP16 pins, freeing GP26 for the optional FSR and GP21 for trackball CS.
 - Handedness on GP27 and USB VBUS detection on GP19.
 - The optional GP26 FSR has configurable thresholds, scan timing, and console diagnostics.
