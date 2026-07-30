@@ -21,6 +21,7 @@
  * Keycodes (always available when the module is linked):
  *     FSR_CAL_IDLE  / FSRCIDL — average idle for FSR_IDLE_CALIBRATE_MS
  *     FSR_CAL_TOUCH / FSRCTCH — sample current reading as touch, set thresholds
+ *     FSR_TOG       / FSRTOG  — toggle FSR scanning on/off (default on)
  *
  * Logs follow QMK console debug via dprintf (toggle with DB_TOGG).
  *

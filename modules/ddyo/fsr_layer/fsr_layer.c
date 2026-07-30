@@ -22,6 +22,7 @@ static bool           fsr_layer_on        = false;
 static bool           fsr_rising_on_press = true;
 static bool           fsr_has_idle        = false;
 static bool           fsr_has_touch       = false;
+static bool           fsr_active          = true;
 static uint16_t       fsr_scan_timer      = 0;
 static uint16_t       fsr_debug_timer     = 0;
 static uint16_t       fsr_release_timer   = 0;
@@ -154,6 +155,15 @@ static void fsr_start_idle_calibration(fsr_cal_mode_t mode) {
     dprintf("FSR cal idle start (%s, %dms) margin:%d hyst:%d\n", mode == FSR_CAL_BOOT_IDLE ? "boot" : "manual", mode == FSR_CAL_BOOT_IDLE ? FSR_BOOT_CALIBRATE_MS : FSR_IDLE_CALIBRATE_MS, FSR_CAL_MARGIN, FSR_CAL_HYSTERESIS);
 }
 
+static void fsr_release_layer_now(void) {
+    fsr_pressed       = false;
+    fsr_release_timer = 0;
+    if (fsr_layer_on) {
+        fsr_layer_on = false;
+        layer_off(FSR_LAYER);
+    }
+}
+
 static void fsr_calibrate_touch_now(int16_t reading) {
     fsr_touch_avg = reading;
     fsr_has_touch = true;
@@ -191,7 +201,7 @@ static void fsr_debug_log(int16_t reading, bool state_changed) {
         int16_t  running = fsr_cal_count ? (int16_t)(fsr_cal_sum / fsr_cal_count) : reading;
         dprintf("FSR cal %s val:%d avg:%d n:%u t:%u/%ums\n", fsr_cal_mode == FSR_CAL_BOOT_IDLE ? "boot" : "idle", reading, running, fsr_cal_count, elapsed, cal_ms);
     } else {
-        dprintf("FSR val:%d max:%d thr:%d/%d pressed:%d layer_on:%d hold:%d idle:%d touch:%d pol:%s\n", reading, fsr_max_reading, fsr_press_thr, fsr_release_thr, fsr_pressed, fsr_layer_on, fsr_release_timer != 0 ? (int)timer_elapsed(fsr_release_timer) : -1, fsr_has_idle ? fsr_idle_avg : -1, fsr_has_touch ? fsr_touch_avg : -1, fsr_rising_on_press ? "rise" : "fall");
+        dprintf("FSR val:%d max:%d thr:%d/%d pressed:%d layer_on:%d hold:%d active:%d idle:%d touch:%d pol:%s\n", reading, fsr_max_reading, fsr_press_thr, fsr_release_thr, fsr_pressed, fsr_layer_on, fsr_release_timer != 0 ? (int)timer_elapsed(fsr_release_timer) : -1, fsr_active, fsr_has_idle ? fsr_idle_avg : -1, fsr_has_touch ? fsr_touch_avg : -1, fsr_rising_on_press ? "rise" : "fall");
     }
 }
 
@@ -223,6 +233,16 @@ bool process_record_fsr_layer(uint16_t keycode, keyrecord_t *record) {
                 fsr_calibrate_touch_now(analogReadPin(FSR_PIN));
             }
             return false;
+        case FSR_TOG:
+            if (record->event.pressed) {
+                fsr_active   = !fsr_active;
+                fsr_cal_mode = FSR_CAL_NONE;
+                /* Always drop the pedal layer on toggle so a press+disable
+                 * cannot leave FSR_LAYER stuck after switching elsewhere. */
+                fsr_release_layer_now();
+                dprintf("FSR %s\n", fsr_active ? "enabled" : "disabled");
+            }
+            return false;
     }
 #else
     (void)keycode;
@@ -234,6 +254,11 @@ bool process_record_fsr_layer(uint16_t keycode, keyrecord_t *record) {
 void housekeeping_task_fsr_layer(void) {
 #ifdef FSR_ENABLE
     if (!fsr_is_sensor_side()) {
+        return;
+    }
+    if (!fsr_active) {
+        /* Safety net: if scanning is off, never keep FSR_LAYER latched. */
+        fsr_release_layer_now();
         return;
     }
 

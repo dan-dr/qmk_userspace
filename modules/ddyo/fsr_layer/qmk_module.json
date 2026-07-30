@@ -13,6 +13,10 @@
     {
       "key": "FSR_CAL_TOUCH",
       "aliases": ["FSRCTCH"]
+    },
+    {
+      "key": "FSR_TOG",
+      "aliases": ["FSRTOG"]
     }
   ]
 }
